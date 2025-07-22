@@ -18,7 +18,7 @@ ativos = st.multiselect(
 
 # Coleta de dados
 if len(ativos) >= 2:
-    dados = yf.download(ativos, start="2022-01-01")['Adj Close']
+    dados = yf.download(ativos, start="2022-01-01")['Close']
     retornos = np.log(dados / dados.shift(1)).dropna()
 
     media = retornos.mean()
