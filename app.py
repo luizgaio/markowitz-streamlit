@@ -69,6 +69,17 @@ if len(ativos) >= 2:
 - **Máx. Drawdown**: {max_dd:.2%}  
 ''')
 
+    # Fronteira Eficiente com Carteiras Simuladas
+    st.subheader("Fronteira Eficiente com Carteiras Simuladas")
+    fig_sim, ax_sim = plt.subplots()
+    sc = ax_sim.scatter(riscos, rets, c=sharpe, cmap='viridis', s=5)
+    ax_sim.scatter(riscos[idx_sharpe_max], rets[idx_sharpe_max], c='red', marker='*', s=100)
+    ax_sim.set_xlabel("Risco (Volatilidade)")
+    ax_sim.set_ylabel("Retorno Esperado")
+    ax_sim.set_title("Fronteira Eficiente com Carteiras Simuladas")
+    plt.colorbar(sc, label="Índice de Sharpe")
+    st.pyplot(fig_sim)
+  
     # Gráfico acumulado
     ibov = benchmark.loc[ret_port.index]
     base100_port = (1 + ret_port).cumprod() * 100
