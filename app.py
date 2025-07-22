@@ -190,8 +190,22 @@ fig_pesos = px.bar(x=ativos, y=pesos, labels={'x': 'Ativo', 'y': 'Peso'}, title=
 st.plotly_chart(fig_pesos, use_container_width=True)
 
 # Matriz de correlação
-fig_corr = px.imshow(retornos.corr(), text_auto=True, title="Matriz de Correlação")
+df_corr = retornos.copy()
+df_corr["Carteira"] = ret_port
+df_corr["Ibovespa"] = benchmark.loc[ret_port.index]
+
+matriz_corr = df_corr.corr()
+
+fig_corr = px.imshow(
+    matriz_corr,
+    text_auto=".2f",
+    color_continuous_scale='RdBu_r',
+    title="Matriz de Correlação - Ativos, Carteira e Ibovespa"
+)
+
+st.markdown("### Matriz de Correlação dos Retornos Diários")
 st.plotly_chart(fig_corr, use_container_width=True)
+
 
 # Rodapé
 st.markdown("---")
