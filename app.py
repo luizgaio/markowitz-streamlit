@@ -174,8 +174,8 @@ if len(ativos) >= 2:
     vol_port = ret_port.rolling(30).std() * np.sqrt(252)
     vol_ibov = ibov.rolling(30).std() * np.sqrt(252)
     fig_vol = go.Figure()
-    fig_vol.add_trace(go.Scatter(y=vol_port, name="Carteira"))
-    fig_vol.add_trace(go.Scatter(y=vol_ibov, name="Ibovespa"))
+    fig_vol.add_trace(go.Scatter(x=vol_port.index, y=vol_port, name="Carteira"))
+    fig_vol.add_trace(go.Scatter(x=vol_ibov.index, y=vol_ibov, name="Ibovespa"))
     fig_vol.update_layout(title="Volatilidade Móvel (30 dias)")
     st.plotly_chart(fig_vol, use_container_width=True)
 
@@ -183,8 +183,8 @@ if len(ativos) >= 2:
     dd_ibov = (1 + ibov).cumprod()
     dd_ibov = dd_ibov / dd_ibov.cummax() - 1
     fig_dd = go.Figure()
-    fig_dd.add_trace(go.Scatter(y=drawdown, name="Carteira"))
-    fig_dd.add_trace(go.Scatter(y=dd_ibov, name="Ibovespa"))
+    fig_dd.add_trace(go.Scatter(x=drawdown.index, y=drawdown, name="Carteira"))
+    fig_dd.add_trace(go.Scatter(x=dd_ibov.index, y=dd_ibov, name="Ibovespa"))
     fig_dd.update_layout(title="Drawdown Comparado")
     st.plotly_chart(fig_dd, use_container_width=True)
 
