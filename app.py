@@ -94,12 +94,6 @@ if len(ativos) >= 2:
     fig_base = px.line(base100, title="Preços dos Ativos - Base 100")
     st.plotly_chart(fig_base, use_container_width=True)
 
-    # Tabela com pesos
-    st.markdown("### Pesos da Carteira ")
-    df_pesos = pd.DataFrame({"Ativo": ativos, "Peso": melhor_pesos})
-    df_pesos["Peso"] = df_pesos["Peso"].apply(lambda x: f"{x:.2%}")
-    st.dataframe(df_pesos)
-
     # Métricas
     retorno_esperado = ret_port.mean() * 252
     volatilidade = ret_port.std() * np.sqrt(252)
@@ -150,7 +144,13 @@ if len(ativos) >= 2:
         <div class='indicador'><strong>CVaR (95%)</strong><br>{cvar_95:.2%}</div>
         <div class='indicador'><strong>Max Drawdown</strong><br>{max_dd:.2%}</div>
         """, unsafe_allow_html=True)
-
+    
+    # Tabela com pesos
+    st.markdown("### Pesos da Carteira ")
+    df_pesos = pd.DataFrame({"Ativo": ativos, "Peso": melhor_pesos})
+    df_pesos["Peso"] = df_pesos["Peso"].apply(lambda x: f"{x:.2%}")
+    st.dataframe(df_pesos)
+    
     # Fronteira
     df_fronteira = pd.DataFrame({'Retorno': rets, 'Risco': riscos, 'Sharpe': sharpe})
     fig_fronteira = px.scatter(df_fronteira, x='Risco', y='Retorno', color='Sharpe',
