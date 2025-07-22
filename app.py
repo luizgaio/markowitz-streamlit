@@ -67,7 +67,7 @@ with col2:
 with col3:
     taxa_rf = st.number_input("Taxa Livre de Risco (a.a.)", value=0.00, format="%.2f") / 100
 
-opcao_carteira = st.selectbox("Escolha a carteira a ser analisada:", ["Carteira Própria", "Máximo Sharpe", "Máximo Sortino", "Máximo Treynor"])
+opcao_carteira = st.selectbox("Escolha a carteira a ser analisada:", ["Carteira Própria", "Máximo Sharpe", "Máximo Sortino", "Máximo Treynor"],index=1)
 
 # Coleta de dados
 if len(ativos) < 2:
