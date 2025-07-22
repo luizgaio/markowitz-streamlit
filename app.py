@@ -150,11 +150,47 @@ df_pesos = pd.DataFrame({"Ativo": ativos, "Peso": pesos})
 df_pesos["Peso"] = df_pesos["Peso"].apply(lambda x: f"{x:.2%}")
 st.dataframe(df_pesos, use_container_width=True)
 
-# Fronteira eficiente
+# Fronteira eficiente com destaques
 df_fronteira = pd.DataFrame({'Retorno': rets, 'Risco': riscos, 'Sharpe': sharpe})
-fig_fronteira = px.scatter(df_fronteira, x='Risco', y='Retorno', color='Sharpe', title="Fronteira Eficiente")
-fig_fronteira.add_trace(go.Scatter(x=[np.sqrt(pesos.T @ cov.values @ pesos)], y=[media @ pesos],
-                                   mode='markers', marker=dict(color='red', size=12), name='Carteira Ótima'))
+fig_fronteira = px.scatter(
+    df_fronteira,
+    x='Risco',
+    y='Retorno',
+    color='Sharpe',
+    title="Fronteira Eficiente",
+    color_continuous_scale='Viridis',
+    labels={"Risco": "Volatilidade", "Retorno": "Retorno Esperado"}
+)
+
+# Carteira Selecionada
+risco_port = np.sqrt(pesos.T @ cov.values @ pesos)
+retorno_port = media @ pesos
+
+fig_fronteira.add_trace(go.Scatter(
+    x=[risco_port],
+    y=[retorno_port],
+    mode='markers+text',
+    marker=dict(color='red', size=12, symbol='star'),
+    text=["Carteira Selecionada"],
+    textposition="top center",
+    name="Carteira Selecionada"
+))
+
+# Ibovespa
+ret_ibov = benchmark.mean() * 252
+risco_ibov = benchmark.std() * np.sqrt(252)
+
+fig_fronteira.add_trace(go.Scatter(
+    x=[risco_ibov],
+    y=[ret_ibov],
+    mode='markers+text',
+    marker=dict(color='blue', size=12, symbol='diamond'),
+    text=["Ibovespa"],
+    textposition="top center",
+    name="Ibovespa"
+))
+
+st.markdown("### Fronteira Eficiente com Destaques")
 st.plotly_chart(fig_fronteira, use_container_width=True)
 
 # Desempenho acumulado
