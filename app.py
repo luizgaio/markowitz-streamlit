@@ -71,7 +71,8 @@ if len(ativos) >= 2:
 
     # Fronteira Eficiente com Carteiras Simuladas
     st.subheader("Fronteira Eficiente com Carteiras Simuladas")
-    fig_sim, ax_sim = plt.subplots(figsize=(6, 4))
+    fig_sim, ax_sim = plt.subplots(figsize=(5, 3), dpi=80)
+    fig_sim.tight_layout()
     sc = ax_sim.scatter(riscos, rets, c=sharpe, cmap='viridis', s=5)
     ax_sim.scatter(riscos[idx_sharpe_max], rets[idx_sharpe_max], c='red', marker='*', s=100)
     ax_sim.set_xlabel("Risco (Volatilidade)")
