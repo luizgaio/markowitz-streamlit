@@ -62,7 +62,7 @@ default_brasil = ['VALE3.SA', 'PETR4.SA', 'ITUB4.SA', 'B3SA3.SA']
 # Multiselect atualizado
 ativos = st.multiselect("Selecione os ativos:", ativos_brasil_sa, default=default_brasil)
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
     data_inicio = st.date_input("Data de início", value=datetime.today() - timedelta(days=3*365))
 with col2:
