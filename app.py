@@ -24,7 +24,7 @@ st.markdown(
 )
 
 # Título
-st.markdown("<h1 style='color:#00ffd5;'>Análise de Carteiras com Fronteira Eficiente</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='color:#191970;'>Análise de Carteiras com Fronteira Eficiente</h1>", unsafe_allow_html=True)
 
 # Entrada de dados
 ativos = st.multiselect("Selecione os ativos:", ['AAPL', 'META', 'TSLA', 'MSFT', 'GOOGL', 'AMZN'], default=['AAPL', 'META', 'TSLA'])
