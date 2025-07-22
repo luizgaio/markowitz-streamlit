@@ -167,7 +167,7 @@ if len(ativos) >= 2:
     fig_acum = go.Figure()
     fig_acum.add_trace(go.Scatter(y=base100_port, name="Carteira"))
     fig_acum.add_trace(go.Scatter(y=base100_ibov, name="Ibovespa"))
-    fig_acum.update_layout(title="Desempenho Acumulado (Base 100)")
+    fig_acum.update_layout(title="Desempenho Acumulado (Base 100)",xaxis_title="Data",yaxis_title="Índice Base 100")
     st.plotly_chart(fig_acum, use_container_width=True)
 
     # Volatilidade Móvel
@@ -176,7 +176,7 @@ if len(ativos) >= 2:
     fig_vol = go.Figure()
     fig_vol.add_trace(go.Scatter(x=vol_port.index, y=vol_port, name="Carteira"))
     fig_vol.add_trace(go.Scatter(x=vol_ibov.index, y=vol_ibov, name="Ibovespa"))
-    fig_vol.update_layout(title="Volatilidade Móvel (30 dias)")
+    fig_vol.update_layout(title="Volatilidade Móvel (30 dias)"xaxis_title="Data",yaxis_title="Volatilidade Anualizada")
     st.plotly_chart(fig_vol, use_container_width=True)
 
     # Drawdown
@@ -185,7 +185,7 @@ if len(ativos) >= 2:
     fig_dd = go.Figure()
     fig_dd.add_trace(go.Scatter(x=drawdown.index, y=drawdown, name="Carteira"))
     fig_dd.add_trace(go.Scatter(x=dd_ibov.index, y=dd_ibov, name="Ibovespa"))
-    fig_dd.update_layout(title="Drawdown Comparado")
+    fig_dd.update_layout(title="Drawdown Comparado",xaxis_title="Data",yaxis_title="Drawdown (%)")
     st.plotly_chart(fig_dd, use_container_width=True)
 
     # Pesos
