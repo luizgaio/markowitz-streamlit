@@ -69,22 +69,11 @@ if len(ativos) >= 2:
 - **Máx. Drawdown**: {max_dd:.2%}  
 ''')
 
-    # Fronteira Eficiente com Carteiras Simuladas
-    st.subheader("Fronteira Eficiente com Carteiras Simuladas")
-    fig_sim, ax_sim = plt.subplots(figsize=(5, 3))
-    sc = ax_sim.scatter(riscos, rets, c=sharpe, cmap='viridis', s=5)
-    ax_sim.scatter(riscos[idx_sharpe_max], rets[idx_sharpe_max], c='red', marker='*', s=100)
-    ax_sim.set_xlabel("Risco (Volatilidade)")
-    ax_sim.set_ylabel("Retorno Esperado")
-    ax_sim.set_title("Fronteira Eficiente com Carteiras Simuladas")
-    plt.colorbar(sc, label="Índice de Sharpe")
-    st.pyplot(fig_sim, use_container_width=False)
-  
     # Gráfico acumulado
     ibov = benchmark.loc[ret_port.index]
     base100_port = (1 + ret_port).cumprod() * 100
     base100_ibov = (1 + ibov).cumprod() * 100
-    fig1, ax1 = plt.subplots(figsize=(6, 4))
+    fig1, ax1 = plt.subplots()
     ax1.plot(base100_port, label="Carteira")
     ax1.plot(base100_ibov, label="Ibovespa")
     ax1.set_title("Desempenho Acumulado (Base 100)")
@@ -94,7 +83,7 @@ if len(ativos) >= 2:
     # Rolling Volatility
     vol_port = ret_port.rolling(30).std() * np.sqrt(252)
     vol_ibov = ibov.rolling(30).std() * np.sqrt(252)
-    fig2, ax2 = plt.subplots(figsize=(6, 4))
+    fig2, ax2 = plt.subplots()
     ax2.plot(vol_port, label="Carteira")
     ax2.plot(vol_ibov, label="Ibovespa")
     ax2.set_title("Volatilidade Móvel (30 dias)")
@@ -104,7 +93,7 @@ if len(ativos) >= 2:
     # Drawdown comparado
     dd_ibov = (1 + ibov).cumprod()
     dd_ibov = dd_ibov / dd_ibov.cummax() - 1
-    fig3, ax3 = plt.subplots(figsize=(6, 4))
+    fig3, ax3 = plt.subplots()
     ax3.plot(drawdown, label="Carteira")
     ax3.plot(dd_ibov, label="Ibovespa")
     ax3.set_title("Drawdown Comparado")
@@ -113,7 +102,7 @@ if len(ativos) >= 2:
 
     # Gráfico dos pesos
     st.subheader("Alocação de Ativos - Carteira Máximo Sharpe")
-    fig4, ax4 = plt.subplots(figsize=(6, 4))
+    fig4, ax4 = plt.subplots()
     ax4.bar(ativos, melhor_pesos)
     ax4.set_ylabel('Peso na Carteira')
     ax4.set_title('Distribuição de Pesos')
@@ -121,7 +110,7 @@ if len(ativos) >= 2:
 
     # Matriz de correlação
     st.subheader("Matriz de Correlação dos Ativos")
-    fig5, ax5 = plt.subplots(figsize=(6, 4))
+    fig5, ax5 = plt.subplots()
     sns.heatmap(retornos.corr(), annot=True, cmap='coolwarm', ax=ax5)
     st.pyplot(fig5)
 
