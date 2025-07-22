@@ -1,4 +1,3 @@
-
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -9,42 +8,10 @@ from datetime import datetime, timedelta
 
 # Layout e estilo
 st.set_page_config(page_title="Markowitz App", layout="wide", initial_sidebar_state="expanded")
-st.markdown(
-    """
-    <style>
-        body {
-            background-color: #101010;
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-        }
-
-        .stApp {
-            background-color: #101010;
-        }
-
-        .css-1d391kg {
-            color: white;
-        }
-
-        .stMarkdown {
-            color: white;
-        }
-
-        .st-bb {
-            color: white;
-        }
-
-        .st-cf, .st-dg, .st-bo {
-            background-color: #101010;
-            color: white;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
 # Título
 st.markdown("<h1 style='color:#191970;'>Análise de Portfólio</h1>", unsafe_allow_html=True)
+
 
 # Entrada de dados
 # ativos = st.multiselect("Selecione os ativos:", ['AAPL', 'META', 'TSLA', 'MSFT', 'GOOGL', 'AMZN'], default=['AAPL', 'META', 'TSLA'])
@@ -93,7 +60,7 @@ ativos_brasil_sa = [ticker + '.SA' for ticker in ativos_brasil]
 default_brasil = ['VALE3.SA', 'PETR4.SA', 'ITUB4.SA', 'B3SA3.SA']
 
 # Multiselect atualizado
-ativos = st.multiselect("Selecione os ativos:", ativos_brasil_sa, default=default_brasil)
+ativos = st.multiselect("Selecione os ativos:", ativos_brasil, default=ativos_brasil)
 
 col1, col2 = st.columns(2)
 with col1:
@@ -126,7 +93,7 @@ if len(ativos) >= 2:
     downside = ret_port[ret_port < 0].std() * np.sqrt(252)
     sortino = retorno_esperado / downside
     covar = np.cov(ret_port, benchmark.loc[ret_port.index])
-    beta = covar[0,1] / covar[1,1]
+    beta = covar[0, 1] / covar[1, 1]
     treynor = retorno_esperado / beta
     var_95 = np.percentile(ret_port, 5) * np.sqrt(252)
     cvar_95 = ret_port[ret_port <= np.percentile(ret_port, 5)].mean() * np.sqrt(252)
@@ -135,19 +102,42 @@ if len(ativos) >= 2:
     max_dd = drawdown.min()
 
     st.markdown("## Carteira Ótima (Sharpe Máximo)")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(f"""- **Retorno Esperado (anual)**: {retorno_esperado:.2%}  
-- **Volatilidade (anual)**: {volatilidade:.2%}  
-- **Sharpe**: {sharpe_ratio:.2f}  
-- **Sortino**: {sortino:.2f}  
-- **Treynor**: {treynor:.2f}""")
-    with col2:
-        st.markdown(f"""- **Beta**: {beta:.2f}  
-- **VaR (95%)**: {var_95:.2%}  
-- **CVaR (95%)**: {cvar_95:.2%}  
-- **Máx. Drawdown**: {max_dd:.2%}""")
 
+    # Indicadores lado a lado com destaque
+    st.markdown("""
+        <style>
+        .indicador {
+            font-size: 20px;
+            padding: 10px;
+            margin: 5px;
+            background-color: #f3f3f3;
+            border-radius: 10px;
+            text-align: center;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"""
+        <div class='indicador'><strong>Retorno Esperado</strong><br>{retorno_esperado:.2%}</div>
+        <div class='indicador'><strong>Volatilidade</strong><br>{volatilidade:.2%}</div>
+        <div class='indicador'><strong>Sharpe</strong><br>{sharpe_ratio:.2f}</div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+        <div class='indicador'><strong>Sortino</strong><br>{sortino:.2f}</div>
+        <div class='indicador'><strong>Treynor</strong><br>{treynor:.2f}</div>
+        <div class='indicador'><strong>Beta</strong><br>{beta:.2f}</div>
+        """, unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"""
+        <div class='indicador'><strong>VaR (95%)</strong><br>{var_95:.2%}</div>
+        <div class='indicador'><strong>CVaR (95%)</strong><br>{cvar_95:.2%}</div>
+        <div class='indicador'><strong>Max Drawdown</strong><br>{max_dd:.2%}</div>
+        """, unsafe_allow_html=True)
+
+    # Fronteira
     df_fronteira = pd.DataFrame({'Retorno': rets, 'Risco': riscos, 'Sharpe': sharpe})
     fig_fronteira = px.scatter(df_fronteira, x='Risco', y='Retorno', color='Sharpe',
                                title="Fronteira Eficiente", color_continuous_scale='Viridis')
@@ -156,6 +146,7 @@ if len(ativos) >= 2:
                                        name='Máx. Sharpe'))
     st.plotly_chart(fig_fronteira, use_container_width=True)
 
+    # Desempenho Acumulado
     ibov = benchmark.loc[ret_port.index]
     base100_port = (1 + ret_port).cumprod() * 100
     base100_ibov = (1 + ibov).cumprod() * 100
@@ -165,6 +156,7 @@ if len(ativos) >= 2:
     fig_acum.update_layout(title="Desempenho Acumulado (Base 100)")
     st.plotly_chart(fig_acum, use_container_width=True)
 
+    # Volatilidade Móvel
     vol_port = ret_port.rolling(30).std() * np.sqrt(252)
     vol_ibov = ibov.rolling(30).std() * np.sqrt(252)
     fig_vol = go.Figure()
@@ -173,6 +165,7 @@ if len(ativos) >= 2:
     fig_vol.update_layout(title="Volatilidade Móvel (30 dias)")
     st.plotly_chart(fig_vol, use_container_width=True)
 
+    # Drawdown
     dd_ibov = (1 + ibov).cumprod()
     dd_ibov = dd_ibov / dd_ibov.cummax() - 1
     fig_dd = go.Figure()
@@ -181,17 +174,20 @@ if len(ativos) >= 2:
     fig_dd.update_layout(title="Drawdown Comparado")
     st.plotly_chart(fig_dd, use_container_width=True)
 
+    # Pesos
     st.markdown("### Alocação da Carteira Ótima")
     fig_pesos = px.bar(x=ativos, y=melhor_pesos, labels={'x': 'Ativo', 'y': 'Peso'},
                        title="Distribuição de Pesos na Carteira")
     st.plotly_chart(fig_pesos, use_container_width=True)
 
+    # Correlação
     st.markdown("### Matriz de Correlação dos Ativos")
     corr = retornos.corr()
     fig_corr = px.imshow(corr, text_auto=True, color_continuous_scale='RdBu_r',
                          title="Matriz de Correlação")
     st.plotly_chart(fig_corr, use_container_width=True)
 
+# Rodapé
 st.markdown("---")
-st.markdown("<center>Desenvolvido pelo <strong>Prof. Luiz Eduardo Gaio</strong> para fins educacionais</center>",
-            unsafe_allow_html=True)
+st.markdown("<center>Desenvolvido pelo <strong>Prof. Luiz Eduardo Gaio</strong> para fins educacionais</center>", unsafe_allow_html=True)
+
