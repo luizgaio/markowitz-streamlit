@@ -60,7 +60,7 @@ ativos_brasil_sa = [ticker + '.SA' for ticker in ativos_brasil]
 default_brasil = ['VALE3.SA', 'PETR4.SA', 'ITUB4.SA', 'B3SA3.SA']
 
 # Multiselect atualizado
-ativos = st.multiselect("Selecione os ativos:", ativos_brasil, default=ativos_brasil)
+ativos = st.multiselect("Selecione os ativos:", ativos_brasil, default=default_brasil)
 
 col1, col2 = st.columns(2)
 with col1:
