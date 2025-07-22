@@ -12,10 +12,30 @@ st.set_page_config(page_title="Markowitz App", layout="wide", initial_sidebar_st
 st.markdown(
     """
     <style>
-        .css-18e3th9 {background-color: #101010;}
-        .css-1dp5vir {color: #FFFFFF;}
-        .reportview-container .markdown-text-container {
+        body {
+            background-color: #101010;
+            color: white;
             font-family: 'Segoe UI', sans-serif;
+        }
+
+        .stApp {
+            background-color: #101010;
+        }
+
+        .css-1d391kg {
+            color: white;
+        }
+
+        .stMarkdown {
+            color: white;
+        }
+
+        .st-bb {
+            color: white;
+        }
+
+        .st-cf, .st-dg, .st-bo {
+            background-color: #101010;
             color: white;
         }
     </style>
