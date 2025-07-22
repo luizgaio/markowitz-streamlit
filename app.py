@@ -152,43 +152,50 @@ st.dataframe(df_pesos, use_container_width=True)
 
 # Fronteira eficiente com destaques
 df_fronteira = pd.DataFrame({'Retorno': rets, 'Risco': riscos, 'Sharpe': sharpe})
-fig_fronteira = px.scatter(
-    df_fronteira,
-    x='Risco',
-    y='Retorno',
-    color='Sharpe',
-    title="Fronteira Eficiente",
-    color_continuous_scale='Viridis',
-    labels={"Risco": "Volatilidade", "Retorno": "Retorno Esperado"}
-)
+fig_fronteira = go.Figure()
+
+# Pontos da fronteira
+fig_fronteira.add_trace(go.Scatter(
+    x=df_fronteira['Risco'],
+    y=df_fronteira['Retorno'],
+    mode='markers',
+    marker=dict(color=df_fronteira['Sharpe'], colorscale='Viridis', size=6, showscale=True),
+    name='Carteiras Simuladas',
+    opacity=0.7
+))
 
 # Carteira Selecionada
-risco_port = np.sqrt(pesos.T @ cov.values @ pesos)
-retorno_port = media @ pesos
-
 fig_fronteira.add_trace(go.Scatter(
     x=[risco_port],
     y=[retorno_port],
     mode='markers+text',
-    marker=dict(color='red', size=12, symbol='star'),
+    marker=dict(color='red', size=14, symbol='star', line=dict(color='black', width=1)),
     text=["Carteira Selecionada"],
     textposition="top center",
-    name="Carteira Selecionada"
+    name="Carteira Selecionada",
+    showlegend=True
 ))
 
 # Ibovespa
-ret_ibov = benchmark.mean() * 252
-risco_ibov = benchmark.std() * np.sqrt(252)
-
 fig_fronteira.add_trace(go.Scatter(
     x=[risco_ibov],
     y=[ret_ibov],
     mode='markers+text',
-    marker=dict(color='blue', size=12, symbol='diamond'),
+    marker=dict(color='blue', size=14, symbol='diamond', line=dict(color='black', width=1)),
     text=["Ibovespa"],
     textposition="top center",
-    name="Ibovespa"
+    name="Ibovespa",
+    showlegend=True
 ))
+
+fig_fronteira.update_layout(
+    title="Fronteira Eficiente com Destaques",
+    xaxis_title="Volatilidade",
+    yaxis_title="Retorno Esperado"
+)
+
+st.plotly_chart(fig_fronteira, use_container_width=True)
+
 
 st.markdown("### Fronteira Eficiente com Destaques")
 st.plotly_chart(fig_fronteira, use_container_width=True)
