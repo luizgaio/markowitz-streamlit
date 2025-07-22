@@ -67,6 +67,8 @@ with col1:
     data_inicio = st.date_input("Data de início", value=datetime.today() - timedelta(days=3*365))
 with col2:
     data_fim = st.date_input("Data de fim", value=datetime.today())
+with col3:
+    taxa_rf = st.number_input("Taxa Livre de Risco (a.a.)", value=0.00, format="%.2f") / 100
 
 if len(ativos) >= 2:
     dados = yf.download(ativos + ['^BVSP'], start=data_inicio, end=data_fim)['Close'].dropna()
@@ -80,21 +82,33 @@ if len(ativos) >= 2:
     pesos = np.random.dirichlet(np.ones(len(ativos)), n)
     rets = pesos @ media.values
     riscos = np.sqrt(np.einsum('ij,jk,ik->i', pesos, cov.values, pesos))
-    sharpe = rets / riscos
+    sharpe = (rets - taxa_rf) / riscos
 
     idx_sharpe_max = np.argmax(sharpe)
     melhor_pesos = pesos[idx_sharpe_max]
     ret_port = (retornos @ melhor_pesos)
 
+    # Gráfico de Preços Base 100
+    st.markdown("### Evolução dos Preços (Base 100)")
+    base100 = (dados[ativos] / dados[ativos].iloc[0]) * 100
+    fig_base = px.line(base100, title="Preços dos Ativos - Base 100")
+    st.plotly_chart(fig_base, use_container_width=True)
+
+    # Tabela com pesos
+    st.markdown("### Pesos da Carteira ")
+    df_pesos = pd.DataFrame({"Ativo": ativos, "Peso": melhor_pesos})
+    df_pesos["Peso"] = df_pesos["Peso"].apply(lambda x: f"{x:.2%}")
+    st.dataframe(df_pesos)
+
     # Métricas
     retorno_esperado = ret_port.mean() * 252
     volatilidade = ret_port.std() * np.sqrt(252)
-    sharpe_ratio = retorno_esperado / volatilidade
+    sharpe_ratio = (retorno_esperado - taxa_rf) / volatilidade
     downside = ret_port[ret_port < 0].std() * np.sqrt(252)
-    sortino = retorno_esperado / downside
+    sortino = (retorno_esperado - taxa_rf) / downside
     covar = np.cov(ret_port, benchmark.loc[ret_port.index])
     beta = covar[0, 1] / covar[1, 1]
-    treynor = retorno_esperado / beta
+    treynor = (retorno_esperado - taxa_rf) / beta
     var_95 = np.percentile(ret_port, 5) * np.sqrt(252)
     cvar_95 = ret_port[ret_port <= np.percentile(ret_port, 5)].mean() * np.sqrt(252)
     acumulado = (1 + ret_port).cumprod()
