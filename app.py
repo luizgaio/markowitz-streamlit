@@ -167,7 +167,11 @@ if len(ativos) >= 2:
     fig_acum = go.Figure()
     fig_acum.add_trace(go.Scatter(y=base100_port, name="Carteira"))
     fig_acum.add_trace(go.Scatter(y=base100_ibov, name="Ibovespa"))
-    fig_acum.update_layout(title="Desempenho Acumulado (Base 100)",xaxis_title="Data",yaxis_title="Índice Base 100")
+    fig_acum.update_layout(
+        title="Desempenho Acumulado (Base 100)",
+        xaxis_title="Data",
+        yaxis_title="Índice Base 100"
+    )
     st.plotly_chart(fig_acum, use_container_width=True)
 
     # Volatilidade Móvel
