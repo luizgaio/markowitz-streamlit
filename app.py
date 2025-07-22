@@ -150,6 +150,8 @@ df_pesos = pd.DataFrame({"Ativo": ativos, "Peso": pesos})
 df_pesos["Peso"] = df_pesos["Peso"].apply(lambda x: f"{x:.2%}")
 st.dataframe(df_pesos, use_container_width=True)
 
+st.markdown("### Fronteira Eficiente")
+
 # Cálculo do retorno e risco do Ibovespa
 ret_ibov = benchmark.mean() * 252
 risco_ibov = benchmark.std() * np.sqrt(252)
@@ -198,10 +200,6 @@ fig_fronteira.update_layout(
     yaxis_title="Retorno Esperado"
 )
 
-st.plotly_chart(fig_fronteira, use_container_width=True)
-
-
-st.markdown("### Fronteira Eficiente com Destaques")
 st.plotly_chart(fig_fronteira, use_container_width=True)
 
 # Desempenho acumulado
