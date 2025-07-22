@@ -1,16 +1,15 @@
 
-import numpy as np
-import pandas as pd
-import yfinance as yf
+import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
-import streamlit as st
+import yfinance as yf
+import numpy as np
+import pandas as pd
 from datetime import datetime, timedelta
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="centered")
 st.title("Análise de Carteiras com Fronteira Eficiente")
 
-# Seleção de ativos e período
 ativos = st.multiselect("Selecione os ativos para análise:",
                         ['AAPL', 'META', 'TSLA', 'MSFT', 'GOOGL', 'AMZN'],
                         default=['AAPL', 'META', 'TSLA'])
@@ -18,7 +17,6 @@ ativos = st.multiselect("Selecione os ativos para análise:",
 data_inicio = st.date_input("Data de início", value=datetime.today() - timedelta(days=3*365))
 data_fim = st.date_input("Data de fim", value=datetime.today())
 
-# Coleta de dados
 if len(ativos) >= 2:
     dados = yf.download(ativos + ['^BVSP'], start=data_inicio, end=data_fim)['Close'].dropna()
     retornos = np.log(dados[ativos] / dados[ativos].shift(1)).dropna()
@@ -27,7 +25,7 @@ if len(ativos) >= 2:
     media = retornos.mean() * 252
     cov = retornos.cov() * 252
 
-    n = 10_000
+    n = 10000
     pesos = np.random.dirichlet(np.ones(len(ativos)), n)
     rets = pesos @ media.values
     riscos = np.sqrt(np.einsum('ij,jk,ik->i', pesos, cov.values, pesos))
@@ -35,13 +33,12 @@ if len(ativos) >= 2:
 
     idx_sharpe_max = np.argmax(sharpe)
     melhor_pesos = pesos[idx_sharpe_max]
-    ret_port = (retornos @ melhor_pesos)
+    ret_port = retornos @ melhor_pesos
 
     st.subheader("Carteira com maior Sharpe:")
     for i, ativo in enumerate(ativos):
         st.write(f"{ativo}: {melhor_pesos[i]:.2%}")
 
-    # Indicadores
     retorno_esperado = ret_port.mean() * 252
     volatilidade = ret_port.std() * np.sqrt(252)
     sharpe_ratio = retorno_esperado / volatilidade
@@ -69,51 +66,59 @@ if len(ativos) >= 2:
 - **Máx. Drawdown**: {max_dd:.2%}  
 ''')
 
-    # Gráfico acumulado
-    ibov = benchmark.loc[ret_port.index]
-    base100_port = (1 + ret_port).cumprod() * 100
-    base100_ibov = (1 + ibov).cumprod() * 100
-    fig1, ax1 = plt.subplots()
-    ax1.plot(base100_port, label="Carteira")
-    ax1.plot(base100_ibov, label="Ibovespa")
-    ax1.set_title("Desempenho Acumulado (Base 100)")
-    ax1.legend()
-    st.pyplot(fig1)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Fronteira Eficiente")
+        fig_sim, ax_sim = plt.subplots(figsize=(5, 3))
+        sc = ax_sim.scatter(riscos, rets, c=sharpe, cmap='viridis', s=5)
+        ax_sim.scatter(riscos[idx_sharpe_max], rets[idx_sharpe_max], c='red', marker='*', s=100)
+        ax_sim.set_xlabel("Risco (Volatilidade)")
+        ax_sim.set_ylabel("Retorno Esperado")
+        plt.colorbar(sc, label="Índice de Sharpe")
+        st.pyplot(fig_sim, use_container_width=False)
+    with col2:
+        st.subheader("Desempenho Acumulado (Base 100)")
+        ibov = benchmark.loc[ret_port.index]
+        base100_port = (1 + ret_port).cumprod() * 100
+        base100_ibov = (1 + ibov).cumprod() * 100
+        fig1, ax1 = plt.subplots(figsize=(5, 3))
+        ax1.plot(base100_port, label="Carteira")
+        ax1.plot(base100_ibov, label="Ibovespa")
+        ax1.legend()
+        st.pyplot(fig1, use_container_width=False)
 
-    # Rolling Volatility
-    vol_port = ret_port.rolling(30).std() * np.sqrt(252)
-    vol_ibov = ibov.rolling(30).std() * np.sqrt(252)
-    fig2, ax2 = plt.subplots()
-    ax2.plot(vol_port, label="Carteira")
-    ax2.plot(vol_ibov, label="Ibovespa")
-    ax2.set_title("Volatilidade Móvel (30 dias)")
-    ax2.legend()
-    st.pyplot(fig2)
+    col3, col4 = st.columns(2)
+    with col3:
+        st.subheader("Volatilidade Móvel (30 dias)")
+        vol_port = ret_port.rolling(30).std() * np.sqrt(252)
+        vol_ibov = ibov.rolling(30).std() * np.sqrt(252)
+        fig2, ax2 = plt.subplots(figsize=(5, 3))
+        ax2.plot(vol_port, label="Carteira")
+        ax2.plot(vol_ibov, label="Ibovespa")
+        ax2.legend()
+        st.pyplot(fig2, use_container_width=False)
+    with col4:
+        st.subheader("Drawdown Comparado")
+        dd_ibov = (1 + ibov).cumprod()
+        dd_ibov = dd_ibov / dd_ibov.cummax() - 1
+        fig3, ax3 = plt.subplots(figsize=(5, 3))
+        ax3.plot(drawdown, label="Carteira")
+        ax3.plot(dd_ibov, label="Ibovespa")
+        ax3.legend()
+        st.pyplot(fig3, use_container_width=False)
 
-    # Drawdown comparado
-    dd_ibov = (1 + ibov).cumprod()
-    dd_ibov = dd_ibov / dd_ibov.cummax() - 1
-    fig3, ax3 = plt.subplots()
-    ax3.plot(drawdown, label="Carteira")
-    ax3.plot(dd_ibov, label="Ibovespa")
-    ax3.set_title("Drawdown Comparado")
-    ax3.legend()
-    st.pyplot(fig3)
+    col5, col6 = st.columns(2)
+    with col5:
+        st.subheader("Alocação de Ativos")
+        fig4, ax4 = plt.subplots(figsize=(5, 3))
+        ax4.bar(ativos, melhor_pesos)
+        ax4.set_ylabel('Peso na Carteira')
+        st.pyplot(fig4, use_container_width=False)
+    with col6:
+        st.subheader("Matriz de Correlação")
+        fig5, ax5 = plt.subplots(figsize=(5, 3))
+        sns.heatmap(retornos.corr(), annot=True, cmap='coolwarm', ax=ax5)
+        st.pyplot(fig5, use_container_width=False)
 
-    # Gráfico dos pesos
-    st.subheader("Alocação de Ativos - Carteira Máximo Sharpe")
-    fig4, ax4 = plt.subplots()
-    ax4.bar(ativos, melhor_pesos)
-    ax4.set_ylabel('Peso na Carteira')
-    ax4.set_title('Distribuição de Pesos')
-    st.pyplot(fig4)
-
-    # Matriz de correlação
-    st.subheader("Matriz de Correlação dos Ativos")
-    fig5, ax5 = plt.subplots()
-    sns.heatmap(retornos.corr(), annot=True, cmap='coolwarm', ax=ax5)
-    st.pyplot(fig5)
-
-# Rodapé
 st.markdown("---")
 st.markdown("Desenvolvido pelo **Prof. Luiz Eduardo Gaio** para fins educacionais.")
