@@ -150,6 +150,10 @@ df_pesos = pd.DataFrame({"Ativo": ativos, "Peso": pesos})
 df_pesos["Peso"] = df_pesos["Peso"].apply(lambda x: f"{x:.2%}")
 st.dataframe(df_pesos, use_container_width=True)
 
+# Cálculo do retorno e risco do Ibovespa
+ret_ibov = benchmark.mean() * 252
+risco_ibov = benchmark.std() * np.sqrt(252)
+
 # Fronteira eficiente com destaques
 df_fronteira = pd.DataFrame({'Retorno': rets, 'Risco': riscos, 'Sharpe': sharpe})
 fig_fronteira = go.Figure()
@@ -166,8 +170,8 @@ fig_fronteira.add_trace(go.Scatter(
 
 # Carteira Selecionada
 fig_fronteira.add_trace(go.Scatter(
-    x=[risco_port],
-    y=[retorno_port],
+    x=[volatilidade],
+    y=[retorno_esperado],
     mode='markers+text',
     marker=dict(color='red', size=14, symbol='star', line=dict(color='black', width=1)),
     text=["Carteira Selecionada"],
