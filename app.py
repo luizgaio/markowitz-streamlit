@@ -69,10 +69,10 @@ with col3:
 
 # Coleta de dados
 if len(ativos) < 2:
-    st.warning("Selecione pelo menos dois ativos para a análise.")
+    st.warning("Selecione pelo menos dois ativos.")
     st.stop()
 
-# Coleta de dados e cálculo dos retornos
+# Download de dados
 dados = yf.download(ativos + ['^BVSP'], start=data_inicio, end=data_fim)['Close'].dropna()
 retornos = np.log(dados[ativos] / dados[ativos].shift(1)).dropna()
 benchmark = np.log(dados['^BVSP'] / dados['^BVSP'].shift(1)).dropna()
@@ -80,64 +80,56 @@ benchmark = np.log(dados['^BVSP'] / dados['^BVSP'].shift(1)).dropna()
 media = retornos.mean() * 252
 cov = retornos.cov() * 252
 
-# Simulação de carteiras
 n = 5000
-pesos_random = np.random.dirichlet(np.ones(len(ativos)), n)
-rets_random = pesos_random @ media.values
-riscos_random = np.sqrt(np.einsum('ij,jk,ik->i', pesos_random, cov.values, pesos_random))
-sharpe_random = (rets_random - taxa_rf) / riscos_random
-
-# Escolha da carteira
-opcao_carteira = st.selectbox("Escolha a carteira a ser analisada:", ["Carteira Própria", "Máximo Sharpe", "Máximo Sortino", "Máximo Treynor"])
+pesos_sim = np.random.dirichlet(np.ones(len(ativos)), n)
+rets = pesos_sim @ media.values
+riscos = np.sqrt(np.einsum('ij,jk,ik->i', pesos_sim, cov.values, pesos_sim))
+sharpe = (rets - taxa_rf) / riscos
 
 if opcao_carteira == "Carteira Própria":
-    st.markdown("#### Insira os pesos (soma deve ser 1.0):")
-    pesos_input = []
-    for i, ativo in enumerate(ativos):
-        peso = st.number_input(f"Peso para {ativo}", min_value=0.0, max_value=1.0, step=0.01, key=f"peso_{i}")
-        pesos_input.append(peso)
-    pesos = np.array(pesos_input)
-    if not np.isclose(np.sum(pesos), 1.0):
-        st.warning("A soma dos pesos deve ser 1.0")
+    st.markdown("#### Insira os pesos da carteira própria (soma deve ser 1.0):")
+    pesos_input = [st.number_input(f"Peso para {ativo}", min_value=0.0, max_value=1.0, step=0.01, key=ativo) for ativo in ativos]
+    if not np.isclose(sum(pesos_input), 1.0):
+        st.error("A soma dos pesos deve ser 1.0")
         st.stop()
+    pesos = np.array(pesos_input)
 else:
-    # pesos aleatórios para cada carteira
     if opcao_carteira == "Máximo Sharpe":
-        idx_otimo = np.argmax(sharpe_random)
+        idx = np.argmax(sharpe)
     elif opcao_carteira == "Máximo Sortino":
-        downside = retornos[retornos < 0].std() * np.sqrt(252)
-        sortino_random = (rets_random - taxa_rf) / (np.einsum('ij,j->i', pesos_random, downside.values))
-        idx_otimo = np.argmax(sortino_random)
+        downside_std = np.std(retornos[retornos < 0], ddof=1) * np.sqrt(252)
+        sortino = (rets - taxa_rf) / downside_std
+        idx = np.argmax(sortino)
     elif opcao_carteira == "Máximo Treynor":
-        betas_ativos = np.array([np.cov(retornos[ativo], benchmark.loc[retornos.index])[0,1] / np.var(benchmark.loc[retornos.index]) for ativo in ativos])
-        betas_port = pesos_random @ betas_ativos
-        treynor_random = (rets_random - taxa_rf) / betas_port
-        idx_otimo = np.argmax(treynor_random)
-    pesos = pesos_random[idx_otimo]
+        betas_ind = np.array([np.cov(retornos[ativo], benchmark)[0,1] / np.var(benchmark) for ativo in ativos])
+        betas = pesos_sim @ betas_ind
+        treynor = (rets - taxa_rf) / betas
+        idx = np.argmax(treynor)
+    pesos = pesos_sim[idx]
 
-# Retorno da carteira
-df_retorno = retornos.copy()
-ret_port = (df_retorno @ pesos)
+ret_port = (retornos @ pesos)
 
 # Indicadores
-ret_esp = ret_port.mean() * 252
-vol = ret_port.std() * np.sqrt(252)
-sharpe = (ret_esp - taxa_rf) / vol
-down = ret_port[ret_port < 0].std() * np.sqrt(252)
-sortino = (ret_esp - taxa_rf) / down
-beta = np.cov(ret_port, benchmark.loc[ret_port.index])[0, 1] / np.var(benchmark.loc[ret_port.index])
-treynor = (ret_esp - taxa_rf) / beta
+retorno_esperado = ret_port.mean() * 252
+volatilidade = ret_port.std() * np.sqrt(252)
+sharpe_ratio = (retorno_esperado - taxa_rf) / volatilidade
+downside = ret_port[ret_port < 0].std() * np.sqrt(252)
+sortino = (retorno_esperado - taxa_rf) / downside
+covar = np.cov(ret_port, benchmark.loc[ret_port.index])
+beta = covar[0, 1] / covar[1, 1]
+treynor = (retorno_esperado - taxa_rf) / beta
 var_95 = np.percentile(ret_port, 5) * np.sqrt(252)
 cvar_95 = ret_port[ret_port <= np.percentile(ret_port, 5)].mean() * np.sqrt(252)
-draw = (1 + ret_port).cumprod() / (1 + ret_port).cumprod().cummax() - 1
-max_dd = draw.min()
+acumulado = (1 + ret_port).cumprod()
+drawdown = acumulado / acumulado.cummax() - 1
+max_dd = drawdown.min()
 
-# Exibição dos indicadores
+st.markdown("### Indicadores da Carteira")
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric("Retorno Esperado", f"{ret_esp:.2%}")
-    st.metric("Volatilidade", f"{vol:.2%}")
-    st.metric("Sharpe", f"{sharpe:.2f}")
+    st.metric("Retorno Esperado", f"{retorno_esperado:.2%}")
+    st.metric("Volatilidade", f"{volatilidade:.2%}")
+    st.metric("Sharpe", f"{sharpe_ratio:.2f}")
 with col2:
     st.metric("Sortino", f"{sortino:.2f}")
     st.metric("Treynor", f"{treynor:.2f}")
@@ -147,27 +139,59 @@ with col3:
     st.metric("CVaR (95%)", f"{cvar_95:.2%}")
     st.metric("Max Drawdown", f"{max_dd:.2%}")
 
-# Gráficos
+# Preço base 100
 base100 = (dados[ativos] / dados[ativos].iloc[0]) * 100
-st.plotly_chart(px.line(base100, title="Evolução dos Preços - Base 100"), use_container_width=True)
+st.plotly_chart(px.line(base100, title="Preços Base 100"), use_container_width=True)
 
-st.dataframe(pd.DataFrame({"Ativo": ativos, "Peso": pesos}).set_index("Ativo"))
+# Tabela de pesos
+df_pesos = pd.DataFrame({"Ativo": ativos, "Peso": pesos})
+df_pesos["Peso"] = df_pesos["Peso"].apply(lambda x: f"{x:.2%}")
+st.dataframe(df_pesos, use_container_width=True)
 
 # Fronteira eficiente
-df_fronteira = pd.DataFrame({"Retorno": rets_random, "Risco": riscos_random, "Sharpe": sharpe_random})
-fig_fronteira = px.scatter(df_fronteira, x="Risco", y="Retorno", color="Sharpe", title="Fronteira Eficiente")
+df_fronteira = pd.DataFrame({'Retorno': rets, 'Risco': riscos, 'Sharpe': sharpe})
+fig_fronteira = px.scatter(df_fronteira, x='Risco', y='Retorno', color='Sharpe', title="Fronteira Eficiente")
+fig_fronteira.add_trace(go.Scatter(x=[np.sqrt(pesos.T @ cov.values @ pesos)], y=[media @ pesos],
+                                   mode='markers', marker=dict(color='red', size=12), name='Carteira Ótima'))
 st.plotly_chart(fig_fronteira, use_container_width=True)
 
 # Desempenho acumulado
-ret_acum = (1 + ret_port).cumprod()
 ibov = benchmark.loc[ret_port.index]
-ibov_acum = (1 + ibov).cumprod()
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=ret_acum.index, y=ret_acum * 100, name="Carteira"))
-fig.add_trace(go.Scatter(x=ibov_acum.index, y=ibov_acum * 100, name="Ibovespa"))
-fig.update_layout(title="Desempenho Acumulado (Base 100)", xaxis_title="Data", yaxis_title="Índice Base 100")
-st.plotly_chart(fig, use_container_width=True)
+base100_port = (1 + ret_port).cumprod() * 100
+base100_ibov = (1 + ibov).cumprod() * 100
+fig_acum = go.Figure()
+fig_acum.add_trace(go.Scatter(x=base100_port.index, y=base100_port, name="Carteira"))
+fig_acum.add_trace(go.Scatter(x=base100_ibov.index, y=base100_ibov, name="Ibovespa"))
+fig_acum.update_layout(title="Desempenho Acumulado (Base 100)", xaxis_title="Data", yaxis_title="Índice")
+st.plotly_chart(fig_acum, use_container_width=True)
+
+# Volatilidade móvel
+vol_port = ret_port.rolling(30).std() * np.sqrt(252)
+vol_ibov = ibov.rolling(30).std() * np.sqrt(252)
+fig_vol = go.Figure()
+fig_vol.add_trace(go.Scatter(x=vol_port.index, y=vol_port, name="Carteira"))
+fig_vol.add_trace(go.Scatter(x=vol_ibov.index, y=vol_ibov, name="Ibovespa"))
+fig_vol.update_layout(title="Volatilidade Móvel (30 dias)", xaxis_title="Data", yaxis_title="Volatilidade")
+st.plotly_chart(fig_vol, use_container_width=True)
+
+# Drawdown
+dd_ibov = (1 + ibov).cumprod()
+dd_ibov = dd_ibov / dd_ibov.cummax() - 1
+fig_dd = go.Figure()
+fig_dd.add_trace(go.Scatter(x=drawdown.index, y=drawdown, name="Carteira"))
+fig_dd.add_trace(go.Scatter(x=dd_ibov.index, y=dd_ibov, name="Ibovespa"))
+fig_dd.update_layout(title="Drawdown", xaxis_title="Data", yaxis_title="Drawdown (%)")
+st.plotly_chart(fig_dd, use_container_width=True)
+
+# Alocação de pesos
+fig_pesos = px.bar(x=ativos, y=pesos, labels={'x': 'Ativo', 'y': 'Peso'}, title="Pesos da Carteira")
+st.plotly_chart(fig_pesos, use_container_width=True)
+
+# Matriz de correlação
+fig_corr = px.imshow(retornos.corr(), text_auto=True, title="Matriz de Correlação")
+st.plotly_chart(fig_corr, use_container_width=True)
 
 # Rodapé
 st.markdown("---")
 st.markdown("<center>Desenvolvido pelo <strong>Prof. Luiz Eduardo Gaio</strong> para fins educacionais</center>", unsafe_allow_html=True)
+
