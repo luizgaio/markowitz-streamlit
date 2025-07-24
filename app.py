@@ -231,8 +231,14 @@ fig_dd.update_layout(title="Drawdown", xaxis_title="Data", yaxis_title="Drawdown
 st.plotly_chart(fig_dd, use_container_width=True)
 
 # Alocação de pesos
-fig_pesos = px.bar(x=ativos, y=pesos, labels={'x': 'Ativo', 'y': 'Peso'}, title="Pesos da Carteira")
-st.plotly_chart(fig_pesos, use_container_width=True)
+fig_pizza = px.pie(
+    names=ativos,
+    values=pesos,
+    title="Distribuição de Pesos da Carteira",
+    hole=0.4  # opcional: para formato de pizza ou donut
+)
+fig_pizza.update_traces(textinfo='percent+label')  # mostra percentual e nome
+st.plotly_chart(fig_pizza, use_container_width=True)
 
 # Matriz de correlação
 df_corr = retornos.copy()
