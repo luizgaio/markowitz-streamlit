@@ -131,7 +131,8 @@ with col2:
 with col3:
     taxa_rf = st.number_input("Taxa Livre de Risco (a.a.)", value=0.00, format="%.2f") / 100
 
-# DEFINIÇÕES DO BENCHMARK (ANTES DO LAYOUT)
+# Seleção do benchmark
+
 BENCH_CANDIDATES = {
     "Ibovespa": ["^BVSP", "BOVA11.SA"],
     "IFIX":     ["^IFIX", "IFIX.SA", "XFIX11.SA"],
@@ -152,39 +153,22 @@ def encontrar_ticker_benchmark(candidates):
             continue
     return None
 
-# NOVO LAYOUT PARA SELEÇÃO DO BENCHMARK
-col_bench1, col_bench2, col_bench3 = st.columns([2, 1, 1])
+# Seleção do benchmark
+benchmark_selecionado = st.selectbox(
+    "Escolha o benchmark para comparação:",
+    list(BENCH_CANDIDATES.keys()),
+    index=0
+)
 
-with col_bench1:
-    # Seleção do benchmark
-    benchmark_selecionado = st.selectbox(
-        "Escolha o benchmark para comparação:",
-        list(BENCH_CANDIDATES.keys()),
-        index=0
-    )
+# Encontra o ticker que funciona
+ticker_candidates = BENCH_CANDIDATES[benchmark_selecionado]
+ticker_benchmark = encontrar_ticker_benchmark(ticker_candidates)
 
-with col_bench2:
-    # Encontra o ticker que funciona
-    ticker_candidates = BENCH_CANDIDATES[benchmark_selecionado]
-    ticker_benchmark = encontrar_ticker_benchmark(ticker_candidates)
-    
-    # Espaçamento para alinhar visualmente
-    st.write("")  # Espaço vazio para alinhamento
-    st.write("")  # Mais um espaço
-
-with col_bench3:
-    # Exibe o resultado da seleção
-    if ticker_benchmark is None:
-        st.error("❌")
-        st.error(f"Nenhum ticker funcionou")
-    else:
-        st.success("✅")
-        st.success(f"Usando: {ticker_benchmark}")
-
-# Verificação de erro (mantida para parar execução se necessário)
 if ticker_benchmark is None:
     st.error(f"❌ Nenhum dos tickers para {benchmark_selecionado} funcionou: {ticker_candidates}")
     st.stop()
+else:
+    st.success(f"✅ Benchmark selecionado: {benchmark_selecionado} usando {ticker_benchmark}")
 
 opcao_carteira = st.selectbox("Escolha a carteira a ser analisada:", ["Carteira Própria", "Máximo Sharpe", "Máximo Sortino", "Máximo Treynor"], index=1)
 
@@ -389,4 +373,3 @@ st.plotly_chart(fig_corr, use_container_width=True)
 # Rodapé
 st.markdown("---")
 st.markdown("<center>Desenvolvido pelo <strong>Prof. Luiz Eduardo Gaio</strong> para fins educacionais</center>", unsafe_allow_html=True)
-
