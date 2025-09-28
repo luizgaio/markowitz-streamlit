@@ -131,17 +131,34 @@ with col2:
 with col3:
     taxa_rf = st.number_input("Taxa Livre de Risco (a.a.)", value=0.00, format="%.2f") / 100
 
-opcao_carteira = st.selectbox("Escolha a carteira a ser analisada:", ["Carteira Própria", "Máximo Sharpe", "Máximo Sortino", "Máximo Treynor"],index=1)
+# NOVO: Seleção do benchmark
+benchmark_options = {
+    "Ibovespa": "^BVSP",
+    "IFIX": "^IFIX",
+    "SMALL": "SMAL11.SA",
+    "IDIV": "^IDIV",
+    "IVVB11": "IVVB11.SA"
+}
+
+benchmark_selecionado = st.selectbox(
+    "Escolha o benchmark para comparação:",
+    list(benchmark_options.keys()),
+    index=0
+)
+
+ticker_benchmark = benchmark_options[benchmark_selecionado]
+
+opcao_carteira = st.selectbox("Escolha a carteira a ser analisada:", ["Carteira Própria", "Máximo Sharpe", "Máximo Sortino", "Máximo Treynor"], index=1)
 
 # Coleta de dados
 if len(ativos) < 2:
     st.warning("Selecione pelo menos dois ativos.")
     st.stop()
 
-# Download de dados
-dados = yf.download(ativos + ['^BVSP'], start=data_inicio, end=data_fim)['Close'].dropna()
+# Download de dados - ATUALIZADO para usar o benchmark selecionado
+dados = yf.download(ativos + [ticker_benchmark], start=data_inicio, end=data_fim)['Close'].dropna()
 retornos = np.log(dados[ativos] / dados[ativos].shift(1)).dropna()
-benchmark = np.log(dados['^BVSP'] / dados['^BVSP'].shift(1)).dropna()
+benchmark = np.log(dados[ticker_benchmark] / dados[ticker_benchmark].shift(1)).dropna()
 
 media = retornos.mean() * 252
 cov = retornos.cov() * 252
@@ -216,9 +233,9 @@ st.dataframe(df_pesos, use_container_width=True)
 
 st.markdown("### Fronteira Eficiente")
 
-# Cálculo do retorno e risco do Ibovespa
-ret_ibov = benchmark.mean() * 252
-risco_ibov = benchmark.std() * np.sqrt(252)
+# Cálculo do retorno e risco do benchmark selecionado
+ret_bench = benchmark.mean() * 252
+risco_bench = benchmark.std() * np.sqrt(252)
 
 # Fronteira eficiente com destaques
 df_fronteira = pd.DataFrame({'Retorno': rets, 'Risco': riscos, 'Sharpe': sharpe})
@@ -246,52 +263,51 @@ fig_fronteira.add_trace(go.Scatter(
     showlegend=True
 ))
 
-# Ibovespa
+# Benchmark selecionado - ATUALIZADO
 fig_fronteira.add_trace(go.Scatter(
-    x=[risco_ibov],
-    y=[ret_ibov],
+    x=[risco_bench],
+    y=[ret_bench],
     mode='markers+text',
     marker=dict(color='blue', size=14, symbol='diamond', line=dict(color='black', width=1)),
-    text=["Ibovespa"],
+    text=[benchmark_selecionado],
     textposition="top center",
-    name="Ibovespa",
+    name=benchmark_selecionado,
     showlegend=True
 ))
 
 fig_fronteira.update_layout(
-    title="Fronteira Eficiente com Destaques",
+    title=f"Fronteira Eficiente com Destaques - Benchmark: {benchmark_selecionado}",
     xaxis_title="Volatilidade",
     yaxis_title="Retorno Esperado"
 )
 
 st.plotly_chart(fig_fronteira, use_container_width=True)
 
-# Desempenho acumulado
-ibov = benchmark.loc[ret_port.index]
+# Desempenho acumulado - ATUALIZADO
 base100_port = (1 + ret_port).cumprod() * 100
-base100_ibov = (1 + ibov).cumprod() * 100
+base100_bench = (1 + benchmark).cumprod() * 100
 fig_acum = go.Figure()
 fig_acum.add_trace(go.Scatter(x=base100_port.index, y=base100_port, name="Carteira"))
-fig_acum.add_trace(go.Scatter(x=base100_ibov.index, y=base100_ibov, name="Ibovespa"))
-fig_acum.update_layout(title="Desempenho Acumulado (Base 100)", xaxis_title="Data", yaxis_title="Índice")
+fig_acum.add_trace(go.Scatter(x=base100_bench.index, y=base100_bench, name=benchmark_selecionado))
+fig_acum.update_layout(title=f"Desempenho Acumulado (Base 100) vs {benchmark_selecionado}", xaxis_title="Data", yaxis_title="Índice")
 st.plotly_chart(fig_acum, use_container_width=True)
 
-# Volatilidade móvel
+# Volatilidade móvel - ATUALIZADO
 vol_port = ret_port.rolling(30).std() * np.sqrt(252)
-vol_ibov = ibov.rolling(30).std() * np.sqrt(252)
+vol_bench = benchmark.rolling(30).std() * np.sqrt(252)
 fig_vol = go.Figure()
 fig_vol.add_trace(go.Scatter(x=vol_port.index, y=vol_port, name="Carteira"))
-fig_vol.add_trace(go.Scatter(x=vol_ibov.index, y=vol_ibov, name="Ibovespa"))
-fig_vol.update_layout(title="Volatilidade Móvel (30 dias)", xaxis_title="Data", yaxis_title="Volatilidade")
+fig_vol.add_trace(go.Scatter(x=vol_bench.index, y=vol_bench, name=benchmark_selecionado))
+fig_vol.update_layout(title=f"Volatilidade Móvel (30 dias) vs {benchmark_selecionado}", xaxis_title="Data", yaxis_title="Volatilidade")
 st.plotly_chart(fig_vol, use_container_width=True)
 
-# Drawdown
-dd_ibov = (1 + ibov).cumprod()
-dd_ibov = dd_ibov / dd_ibov.cummax() - 1
+# Drawdown - ATUALIZADO
+dd_bench = (1 + benchmark).cumprod()
+dd_bench = dd_bench / dd_bench.cummax() - 1
 fig_dd = go.Figure()
 fig_dd.add_trace(go.Scatter(x=drawdown.index, y=drawdown, name="Carteira"))
-fig_dd.add_trace(go.Scatter(x=dd_ibov.index, y=dd_ibov, name="Ibovespa"))
-fig_dd.update_layout(title="Drawdown", xaxis_title="Data", yaxis_title="Drawdown (%)")
+fig_dd.add_trace(go.Scatter(x=dd_bench.index, y=dd_bench, name=benchmark_selecionado))
+fig_dd.update_layout(title=f"Drawdown vs {benchmark_selecionado}", xaxis_title="Data", yaxis_title="Drawdown (%)")
 st.plotly_chart(fig_dd, use_container_width=True)
 
 # Alocação de pesos
@@ -299,15 +315,15 @@ fig_pizza = px.pie(
     names=ativos,
     values=pesos,
     title="Distribuição de Pesos da Carteira",
-    hole=0.4  # opcional: para formato de pizza ou donut
+    hole=0.4
 )
-fig_pizza.update_traces(textinfo='percent+label')  # mostra percentual e nome
+fig_pizza.update_traces(textinfo='percent+label')
 st.plotly_chart(fig_pizza, use_container_width=True)
 
-# Matriz de correlação
+# Matriz de correlação - ATUALIZADO
 df_corr = retornos.copy()
 df_corr["Carteira"] = ret_port
-df_corr["Ibovespa"] = benchmark.loc[ret_port.index]
+df_corr[benchmark_selecionado] = benchmark
 
 matriz_corr = df_corr.corr()
 
@@ -315,12 +331,11 @@ fig_corr = px.imshow(
     matriz_corr,
     text_auto=".2f",
     color_continuous_scale='RdBu_r',
-    title="Matriz de Correlação - Ativos, Carteira e Ibovespa"
+    title=f"Matriz de Correlação - Ativos, Carteira e {benchmark_selecionado}"
 )
 
 st.markdown("### Matriz de Correlação dos Retornos Diários")
 st.plotly_chart(fig_corr, use_container_width=True)
-
 
 # Rodapé
 st.markdown("---")
