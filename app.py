@@ -131,22 +131,44 @@ with col2:
 with col3:
     taxa_rf = st.number_input("Taxa Livre de Risco (a.a.)", value=0.00, format="%.2f") / 100
 
-# NOVO: Seleção do benchmark
-benchmark_options = {
-    "Ibovespa": "^BVSP",
-    "IFIX": "^IFIX",
-    "SMALL": "SMAL11.SA",
-    "IDIV": "^IDIV",
-    "IVVB11": "IVVB11.SA"
+# Seleção do benchmark
+
+BENCH_CANDIDATES = {
+    "Ibovespa": ["^BVSP", "BOVA11.SA"],
+    "IFIX":     ["^IFIX", "IFIX.SA", "XFIX11.SA"],
+    "SMALL":    ["SMLL.SA", "SMAL11.SA"],
+    "IDIV":     ["IDIV.SA", "DIVO11.SA"],
+    "IVVB11":   ["IVVB11.SA"],
 }
 
+# Função para encontrar o primeiro ticker que funciona
+def encontrar_ticker_benchmark(candidates):
+    for ticker in candidates:
+        try:
+            # Testa se o ticker existe e tem dados
+            temp_data = yf.download(ticker, start=data_inicio, end=data_fim, progress=False)
+            if not temp_data.empty and len(temp_data) > 0:
+                return ticker
+        except:
+            continue
+    return None
+
+# Seleção do benchmark
 benchmark_selecionado = st.selectbox(
     "Escolha o benchmark para comparação:",
-    list(benchmark_options.keys()),
+    list(BENCH_CANDIDATES.keys()),
     index=0
 )
 
-ticker_benchmark = benchmark_options[benchmark_selecionado]
+# Encontra o ticker que funciona
+ticker_candidates = BENCH_CANDIDATES[benchmark_selecionado]
+ticker_benchmark = encontrar_ticker_benchmark(ticker_candidates)
+
+if ticker_benchmark is None:
+    st.error(f"❌ Nenhum dos tickers para {benchmark_selecionado} funcionou: {ticker_candidates}")
+    st.stop()
+else:
+    st.success(f"✅ Benchmark selecionado: {benchmark_selecionado} usando {ticker_benchmark}")
 
 opcao_carteira = st.selectbox("Escolha a carteira a ser analisada:", ["Carteira Própria", "Máximo Sharpe", "Máximo Sortino", "Máximo Treynor"], index=1)
 
@@ -156,9 +178,20 @@ if len(ativos) < 2:
     st.stop()
 
 # Download de dados - ATUALIZADO para usar o benchmark selecionado
-dados = yf.download(ativos + [ticker_benchmark], start=data_inicio, end=data_fim)['Close'].dropna()
-retornos = np.log(dados[ativos] / dados[ativos].shift(1)).dropna()
-benchmark = np.log(dados[ticker_benchmark] / dados[ticker_benchmark].shift(1)).dropna()
+try:
+    dados = yf.download(ativos + [ticker_benchmark], start=data_inicio, end=data_fim)['Close'].dropna()
+    
+    # Verifica se o benchmark tem dados
+    if ticker_benchmark not in dados.columns or dados[ticker_benchmark].isna().all():
+        st.error(f"❌ Não foi possível obter dados para o benchmark {ticker_benchmark}")
+        st.stop()
+        
+    retornos = np.log(dados[ativos] / dados[ativos].shift(1)).dropna()
+    benchmark = np.log(dados[ticker_benchmark] / dados[ticker_benchmark].shift(1)).dropna()
+    
+except Exception as e:
+    st.error(f"❌ Erro ao baixar dados: {e}")
+    st.stop()
 
 media = retornos.mean() * 252
 cov = retornos.cov() * 252
@@ -269,9 +302,9 @@ fig_fronteira.add_trace(go.Scatter(
     y=[ret_bench],
     mode='markers+text',
     marker=dict(color='blue', size=14, symbol='diamond', line=dict(color='black', width=1)),
-    text=[benchmark_selecionado],
+    text=[f"{benchmark_selecionado} ({ticker_benchmark})"],
     textposition="top center",
-    name=benchmark_selecionado,
+    name=f"{benchmark_selecionado} ({ticker_benchmark})",
     showlegend=True
 ))
 
@@ -288,7 +321,7 @@ base100_port = (1 + ret_port).cumprod() * 100
 base100_bench = (1 + benchmark).cumprod() * 100
 fig_acum = go.Figure()
 fig_acum.add_trace(go.Scatter(x=base100_port.index, y=base100_port, name="Carteira"))
-fig_acum.add_trace(go.Scatter(x=base100_bench.index, y=base100_bench, name=benchmark_selecionado))
+fig_acum.add_trace(go.Scatter(x=base100_bench.index, y=base100_bench, name=f"{benchmark_selecionado} ({ticker_benchmark})"))
 fig_acum.update_layout(title=f"Desempenho Acumulado (Base 100) vs {benchmark_selecionado}", xaxis_title="Data", yaxis_title="Índice")
 st.plotly_chart(fig_acum, use_container_width=True)
 
@@ -297,7 +330,7 @@ vol_port = ret_port.rolling(30).std() * np.sqrt(252)
 vol_bench = benchmark.rolling(30).std() * np.sqrt(252)
 fig_vol = go.Figure()
 fig_vol.add_trace(go.Scatter(x=vol_port.index, y=vol_port, name="Carteira"))
-fig_vol.add_trace(go.Scatter(x=vol_bench.index, y=vol_bench, name=benchmark_selecionado))
+fig_vol.add_trace(go.Scatter(x=vol_bench.index, y=vol_bench, name=f"{benchmark_selecionado} ({ticker_benchmark})"))
 fig_vol.update_layout(title=f"Volatilidade Móvel (30 dias) vs {benchmark_selecionado}", xaxis_title="Data", yaxis_title="Volatilidade")
 st.plotly_chart(fig_vol, use_container_width=True)
 
@@ -306,7 +339,7 @@ dd_bench = (1 + benchmark).cumprod()
 dd_bench = dd_bench / dd_bench.cummax() - 1
 fig_dd = go.Figure()
 fig_dd.add_trace(go.Scatter(x=drawdown.index, y=drawdown, name="Carteira"))
-fig_dd.add_trace(go.Scatter(x=dd_bench.index, y=dd_bench, name=benchmark_selecionado))
+fig_dd.add_trace(go.Scatter(x=dd_bench.index, y=dd_bench, name=f"{benchmark_selecionado} ({ticker_benchmark})"))
 fig_dd.update_layout(title=f"Drawdown vs {benchmark_selecionado}", xaxis_title="Data", yaxis_title="Drawdown (%)")
 st.plotly_chart(fig_dd, use_container_width=True)
 
@@ -323,7 +356,7 @@ st.plotly_chart(fig_pizza, use_container_width=True)
 # Matriz de correlação - ATUALIZADO
 df_corr = retornos.copy()
 df_corr["Carteira"] = ret_port
-df_corr[benchmark_selecionado] = benchmark
+df_corr[f"{benchmark_selecionado}"] = benchmark
 
 matriz_corr = df_corr.corr()
 
