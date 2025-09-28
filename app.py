@@ -10,9 +10,8 @@ from datetime import datetime, timedelta
 st.set_page_config(page_title="Markowitz App", layout="wide", initial_sidebar_state="expanded")
 st.markdown("<h1 style='color:#191970;'>Análise de Portfólio</h1>", unsafe_allow_html=True)
 
-# Entrada de dados
-# ativos = st.multiselect("Selecione os ativos:", ['AAPL', 'META', 'TSLA', 'MSFT', 'GOOGL', 'AMZN'], default=['AAPL', 'META', 'TSLA'])
-ativos_brasil = [
+# Definição separada de Ações e FIIs
+ACOES_BRASIL = [
     "ALPK3", "DOHL3", "GOLL4", "AMBP3", "DOHL4", "VSTE3", "SUZB3", "FRIO3", "OPCT3", "TUPY3", "FIEI3", "PETZ3", "CASH3",
     "DTCY3", "IRBR3", "SCAR3", "HAPV3", "AVLL3", "MAPT4", "RAIL3", "MOAR3", "JALL3", "AURA33", "MAPT3", "CVCB3",
     "SIMH3", "BIOM3", "AALR3", "ENJU3", "ZAMP3", "HBSA3", "ATED3", "DOTZ3", "NGRD3", "PDTC3", "BLUT3", "LJQQ3",
@@ -47,7 +46,10 @@ ativos_brasil = [
     "VIVT3", "SEER3", "RDOR3", "AZZA3", "BSLI3", "ELET5", "BRST3", "BSLI4", "RENT3", "JPSA3", "FRAS3", "HYPE3",
     "RADL3", "PEAB4", "BPAC3", "PEAB3", "UCAS3", "EMBR3", "ALPA3", "SMFT3", "WEGE3", "ALPA4", "TOTS3", "GEPA3",
     "GEPA4", "USIM5", "USIM3", "LOGN3", "ELMD3", "REAG3", "EVEN3", "ESPA3", "ENEV3", "BRAV3", "GPAR3", "LWSA3",
-    "PRNR3", "MNDL3", "USIM6", "LAND3", "TELB4", "QUAL3", "ORVR3", "TIMS3", "POSI3", "TELB3", "SRNA3", "AURE3",
+    "PRNR3", "MNDL3", "USIM6", "LAND3", "TELB4", "QUAL3", "ORVR3", "TIMS3", "POSI3", "TELB3", "SRNA3", "AURE3"
+]
+
+FIIS_BRASIL = [
     "AFHI11","AFHF11","ATWN11","AJFI11","ALZC11","MTOF11","ALZR11","AURB11",
     "APXM11","APXU11","AIEC11","AROA11","EIRA11","ARTE11","ARXD11","AZPE11",
     "AZPL11","CEBB11","BCRI11","BNFS11","BTML11","BZEL11","BPDR11","BPLC11",
@@ -115,13 +117,43 @@ ativos_brasil = [
 ]
 
 # Adiciona .SA no final de cada ticker
-ativos_brasil_sa = [ticker + '.SA' for ticker in ativos_brasil]
+acoes_brasil_sa = [ticker + '.SA' for ticker in ACOES_BRASIL]
+fiis_brasil_sa = [ticker + '.SA' for ticker in FIIS_BRASIL]
 
 # Ativos padrão
-default_brasil = ['VALE3.SA', 'PETR4.SA', 'ITUB4.SA', 'B3SA3.SA']
+default_acoes = ['VALE3.SA', 'PETR4.SA', 'ITUB4.SA', 'B3SA3.SA']
+default_fiis = ['HGLG11.SA', 'KNRI11.SA', 'MXRF11.SA', 'HGRE11.SA']
 
-# Multiselect atualizado
-ativos = st.multiselect("Selecione os ativos:", ativos_brasil_sa, default=default_brasil)
+# NOVA SELEÇÃO DE TIPO DE ATIVOS
+st.markdown("### 🔧 Configuração da Carteira")
+
+# Seleção do tipo de ativos
+tipo_ativos = st.radio(
+    "Selecione o tipo de ativos para análise:",
+    ["Ações", "Fundos Imobiliários (FIIs)", "Misto (Ações + FIIs)"],
+    horizontal=True,
+    index=0
+)
+
+# Multiselect baseado no tipo selecionado
+if tipo_ativos == "Ações":
+    ativos_disponiveis = acoes_brasil_sa
+    default_ativos = default_acoes
+    st.info("📈 Selecionando apenas Ações")
+elif tipo_ativos == "Fundos Imobiliários (FIIs)":
+    ativos_disponiveis = fiis_brasil_sa
+    default_ativos = default_fiis
+    st.info("🏢 Selecionando apenas Fundos Imobiliários")
+else:  # Misto
+    ativos_disponiveis = acoes_brasil_sa + fiis_brasil_sa
+    default_ativos = default_acoes[:2] + default_fiis[:2]  # 2 de cada
+    st.info("📊 Selecionando Ações e Fundos Imobiliários")
+
+ativos = st.multiselect(
+    f"Selecione os ativos ({len(ativos_disponiveis)} disponíveis):", 
+    ativos_disponiveis, 
+    default=default_ativos
+)
 
 col1, col2, col3 = st.columns(3)
 with col1:
