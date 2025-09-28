@@ -134,11 +134,11 @@ with col3:
 # Seleção do benchmark
 
 BENCH_CANDIDATES = {
-    "Ibovespa": ["^BVSP", "BOVA11.SA"],
-    "IFIX":     ["^IFIX", "IFIX.SA", "XFIX11.SA"],
-    "SMALL":    ["SMLL.SA", "SMAL11.SA"],
-    "IDIV":     ["IDIV.SA", "DIVO11.SA"],
-    "IVVB11":   ["IVVB11.SA"],
+    "Ações - Ibovespa": ["^BVSP", "BOVA11.SA"],
+    "Ações - Empresas Pequenas":    ["SMLL.SA", "SMAL11.SA"],
+    "Ações - Empresas de Dividendos":     ["IDIV.SA", "DIVO11.SA"],
+    "Ações Internacionais - S&P500":   ["IVVB11.SA","SPXI11.SA"],
+    "Fundos Imobiliários - IFIX":     ["^IFIX", "IFIX.SA", "XFIX11.SA"],
 }
 
 # Função para encontrar o primeiro ticker que funciona
