@@ -234,18 +234,6 @@ rets = pesos_sim @ media.values
 riscos = np.sqrt(np.einsum('ij,jk,ik->i', pesos_sim, cov.values, pesos_sim))
 sharpe = (rets - taxa_rf) / riscos
 
-# PRÉ-CALCULAR ESTRATÉGIAS QUE NÃO DEPENDEM DO BENCHMARK
-# 1. Máximo Sharpe
-idx_sharpe = np.argmax(sharpe)
-pesos_sharpe = pesos_sim[idx_sharpe]
-
-# 2. Máximo Sortino
-downside_std = np.std(retornos[retornos < 0], ddof=1) * np.sqrt(252)
-sortino = (rets - taxa_rf) / downside_std
-idx_sortino = np.argmax(sortino)
-pesos_sortino = pesos_sim[idx_sortino]
-
-# AGORA APLICAR A ESTRATÉGIA SELECIONADA
 if opcao_carteira == "Carteira Própria":
     st.markdown("#### Insira os pesos da carteira própria (soma deve ser 1.0):")
     pesos_input = [st.number_input(f"Peso para {ativo}", min_value=0.0, max_value=1.0, step=0.01, key=ativo) for ativo in ativos]
@@ -253,20 +241,21 @@ if opcao_carteira == "Carteira Própria":
         st.error("A soma dos pesos deve ser 1.0")
         st.stop()
     pesos = np.array(pesos_input)
-    
-elif opcao_carteira == "Máximo Sharpe":
-    pesos = pesos_sharpe
-    
-elif opcao_carteira == "Máximo Sortino":
-    pesos = pesos_sortino
-    
-elif opcao_carteira == "Máximo Treynor":
-    # ÚNICO que depende do benchmark
-    betas_ind = np.array([np.cov(retornos[ativo], benchmark)[0,1] / np.var(benchmark) for ativo in ativos])
-    betas = pesos_sim @ betas_ind
-    treynor = (rets - taxa_rf) / betas
-    idx_treynor = np.argmax(treynor)
-    pesos = pesos_sim[idx_treynor]
+else:
+    if opcao_carteira == "Máximo Sharpe":
+        idx_sharpe = np.argmax(sharpe)
+        pesos = pesos_sim[idx_sharpe]
+    elif opcao_carteira == "Máximo Sortino":
+        downside_std = np.std(retornos[retornos < 0], ddof=1) * np.sqrt(252)
+        sortino = (rets - taxa_rf) / downside_std
+        idx_sortino = np.argmax(sortino)
+        pesos = pesos_sim[idx_sortino]
+    elif opcao_carteira == "Máximo Treynor":
+        betas_ind = np.array([np.cov(retornos[ativo], benchmark)[0,1] / np.var(benchmark) for ativo in ativos])
+        betas = pesos_sim @ betas_ind
+        treynor = (rets - taxa_rf) / betas
+        idx_treynor = np.argmax(treynor)
+        pesos = pesos_sim[idx_treynor]
 
 ret_port = (retornos @ pesos)
 
