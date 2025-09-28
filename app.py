@@ -243,17 +243,19 @@ if opcao_carteira == "Carteira Própria":
     pesos = np.array(pesos_input)
 else:
     if opcao_carteira == "Máximo Sharpe":
-        idx = np.argmax(sharpe)
+        idx_sharpe = np.argmax(sharpe)
+        pesos = pesos_sim[idx_sharpe]
     elif opcao_carteira == "Máximo Sortino":
         downside_std = np.std(retornos[retornos < 0], ddof=1) * np.sqrt(252)
         sortino = (rets - taxa_rf) / downside_std
-        idx = np.argmax(sortino)
+        idx_sortino = np.argmax(sortino)
+        pesos = pesos_sim[idx_sortino]
     elif opcao_carteira == "Máximo Treynor":
         betas_ind = np.array([np.cov(retornos[ativo], benchmark)[0,1] / np.var(benchmark) for ativo in ativos])
         betas = pesos_sim @ betas_ind
         treynor = (rets - taxa_rf) / betas
-        idx = np.argmax(treynor)
-    pesos = pesos_sim[idx]
+        idx_treynor = np.argmax(treynor)
+        pesos = pesos_sim[idx_treynor]
 
 ret_port = (retornos @ pesos)
 
