@@ -6,128 +6,181 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
-# Layout e estilo
+# ----------------------------
+# Configuração da página
+# ----------------------------
 st.set_page_config(page_title="Markowitz App", layout="wide", initial_sidebar_state="expanded")
 st.markdown("<h1 style='color:#191970;'>Análise de Portfólio</h1>", unsafe_allow_html=True)
 
-# Definição separada de Ações e FIIs
-ACOES_BRASIL = [
-    "ALPK3", "DOHL3", "GOLL4", "AMBP3", "DOHL4", "VSTE3", "SUZB3", "FRIO3", "OPCT3", "TUPY3", "FIEI3", "PETZ3", "CASH3",
-    "DTCY3", "IRBR3", "SCAR3", "HAPV3", "AVLL3", "MAPT4", "RAIL3", "MOAR3", "JALL3", "AURA33", "MAPT3", "CVCB3",
-    "SIMH3", "BIOM3", "AALR3", "ENJU3", "ZAMP3", "HBSA3", "ATED3", "DOTZ3", "NGRD3", "PDTC3", "BLUT3", "LJQQ3",
-    "RPAD5", "PTBL3", "MRVE3", "RNEW11", "RNEW3", "CRPG6", "RNEW4", "MLAS3", "CRPG3", "ONCO3", "MEAL3", "BEEF3",
-    "MATD3", "ADHM3", "AMAR3", "CSNA3", "CRPG5", "RAIZ4", "RPAD3", "RCSL3", "TRAD3", "FICT3", "AMOB3", "GFSA3",
-    "RPAD6", "AZTE3", "WEST3", "NTCO3", "RCSL4", "BLUT4", "LUPA3", "DASA3", "BIED3", "GPIV33", "AZEV4", "AZEV3",
-    "ESTR4", "CEED3", "CSAN3", "TCSA3", "TXRX3", "MGEL4", "PCAR3", "BRKM3", "TOKY3", "BRKM6", "BRKM5", "VIVR3",
-    "RDNI3", "SNSY5", "SHOW3", "BDLL3", "PLAS3", "BDLL4", "INEP3", "INEP4", "AERI3", "VVEO3", "BHIA3", "FHER3",
-    "ATMP3", "CTAX3", "TXRX4", "CTSA3", "CTSA4", "RPMG3", "JFEN3", "PMAM3", "IFCM3", "SEQL3", "AGXY3", "GSHP3",
-    "PDGR3", "OSXB3", "OIBR3", "AZUL4", "NEXP3", "AMER3", "RSID3", "OIBR4", "IGBR3", "HOOT4", "LIGT3", "MWET4",
-    "NORD3", "MWET3", "CEDO4", "CTKA3", "CTKA4", "SYNE3", "CEDO3", "AHEB3", "JBSS3", "JHSF3", "HETA4", "BAZA3",
-    "EALT4", "PRIO3", "BBAS3", "EALT3", "VTRU3", "VBBR3", "SOND6", "BNBR3", "ISAE4", "BGIP4", "BMEB3", "CMIG4",
-    "AHEB5", "SOND5", "SAPR4", "BRSR6", "SAPR11", "LOGG3", "LUXM4", "BMEB4", "SAPR3", "PINE3", "BMGB4", "TKNO4",
-    "BRSR3", "PINE4", "COGN3", "BALM4", "CLSC3", "BRAP3", "SBFG3", "ABCB4", "BGIP3", "BOBR4", "HBOR3", "RANI3",
-    "ENGI4", "MRSA5B", "CAMB3", "CLSC4", "CGRA4", "CEEB3", "BRAP4", "CEEB5", "ECOR3", "ISAE3", "ENGI11", "CGRA3",
-    "PTNT4", "ALLD3", "CYRE3", "VLID3", "COCE3", "TECN3", "DEXP4", "MRSA6B", "CMIG3", "DEXP3", "MDNE3", "EQPA3",
-    "EQMA3B", "GRND3", "MRSA3B", "MTRE3", "COCE5", "TRIS3", "LAVV3", "EZTC3", "EUCA4", "POMO3", "WLMM4", "BRSR5",
-    "BALM3", "AGRO3", "SANB3", "LVTC3", "SHUL4", "TAEE4", "BBDC3", "TAEE11", "TAEE3", "WIZC3", "MRFG3", "RSUL4",
-    "ENGI3", "BEES4", "WLMM3", "WHRL4", "CSMG3", "BEES3", "SANB11", "RECV3", "NUTR3", "HAGA4", "WHRL3", "JSLG3",
-    "RAPT3", "EQPA5", "SANB4", "SBSP3", "EUCA3", "FIQE3", "KEPL3", "PLPL3", "RAPT4", "ITSA4", "ITSA3", "CEBR3",
-    "FESA4", "CEBR5", "UGPA3", "LEVE3", "PFRM3", "BBSE3", "CMIN3", "BBDC4", "CSUD3", "VALE3", "EQPA6", "NEOE3",
-    "CBEE3", "MOVI3", "TGMA3", "BPAC5", "ETER3", "CPFE3", "POMO4", "GOAU4", "VIVA3", "GOAU3", "CEBR6", "PETR4",
-    "ALUP4", "CAML3", "BLAU3", "HBRE3", "TTEN3", "UNIP3", "ALUP11", "PATI4", "ITUB3", "TPIS3", "VULC3", "ROMI3",
-    "BRBI11", "PETR3", "MILS3", "EQPA7", "ALUP3", "CSED3", "CRFB3", "ELET3", "DMVF3", "MYPK3", "GGBR3", "EKTR3",
-    "BRFS3", "CGAS3", "CGAS5", "UNIP6", "ITUB4", "UNIP5", "BMIN4", "OFSA3", "TASA4", "MULT3", "LPSB3", "ELET6",
-    "EGIE3", "VITT3", "ARML3", "GGBR4", "MTSA4", "REDE3", "SMTO3", "DESK3", "CXSE3", "DIRR3", "SLCE3", "PATI3",
-    "ODPV3", "INTB3", "HAGA3", "PTNT3", "CPLE3", "YDUQ3", "JOPA3", "BMIN3", "GUAR3", "EKTR4", "TASA3", "PSSA3",
-    "CURY3", "CPLE6", "BMKS3", "GMAT3", "IGTI3", "BPAC11", "BPAN4", "ANIM3", "EPAR3", "FLRY3", "KLBN4", "MELK3",
-    "MNPR3", "KLBN11", "ENMT4", "CPLE5", "HBTS5", "MGLU3", "KLBN3", "CEAB3", "PORT3", "ALOS3", "VAMO3", "FESA3",
-    "EQTL3", "TEND3", "NATU3", "SOJA3", "BMOB3", "PNVL3", "ENMT3", "LREN3", "B3SA3", "ABEV3", "PGMN3", "IGTI11",
-    "MDIA3", "STBP3", "GGPS3", "AFLT3", "ASAI3", "BAUH4", "EMAE4", "CBAV3", "LIPR3", "TFCO4", "DXCO3", "MOTV3",
-    "VIVT3", "SEER3", "RDOR3", "AZZA3", "BSLI3", "ELET5", "BRST3", "BSLI4", "RENT3", "JPSA3", "FRAS3", "HYPE3",
-    "RADL3", "PEAB4", "BPAC3", "PEAB3", "UCAS3", "EMBR3", "ALPA3", "SMFT3", "WEGE3", "ALPA4", "TOTS3", "GEPA3",
-    "GEPA4", "USIM5", "USIM3", "LOGN3", "ELMD3", "REAG3", "EVEN3", "ESPA3", "ENEV3", "BRAV3", "GPAR3", "LWSA3",
-    "PRNR3", "MNDL3", "USIM6", "LAND3", "TELB4", "QUAL3", "ORVR3", "TIMS3", "POSI3", "TELB3", "SRNA3", "AURE3"
-]
+# ----------------------------
+# Helpers
+# ----------------------------
+def as_dt(d):
+    """Converte date -> datetime (Streamlit date_input retorna date)."""
+    return datetime.combine(d, datetime.min.time()) if not isinstance(d, datetime) else d
 
+def extract_close(df: pd.DataFrame) -> pd.DataFrame:
+    """Extrai preços de fechamento (Close ou Adj Close) de um DataFrame do yfinance.
+       Funciona com colunas simples ou MultiIndex (Ticker, Campo)."""
+    if df is None or len(df) == 0:
+        return pd.DataFrame()
+
+    # 1) Colunas simples
+    if "Close" in df.columns:
+        return df["Close"]
+    if "Adj Close" in df.columns:
+        return df["Adj Close"]
+
+    # 2) MultiIndex (Ticker, Campo)
+    if isinstance(df.columns, pd.MultiIndex):
+        closes = {}
+        for t in df.columns.get_level_values(0).unique():
+            cols = df[t]
+            if "Close" in cols:
+                closes[t] = cols["Close"]
+            elif "Adj Close" in cols:
+                closes[t] = cols["Adj Close"]
+        if closes:
+            return pd.DataFrame(closes)
+
+    return pd.DataFrame()
+
+def try_download_single(ticker, start, end, intervals=("1d", "1wk")):
+    """Baixa uma série (1 ticker) tentando Close/Adj Close, com fallback de interval.
+       Retorna uma Series com o nome do ticker ou Series vazia."""
+    for itv in intervals:
+        try:
+            df = yf.download(
+                tickers=[ticker],
+                start=start,
+                end=end,
+                interval=itv,
+                group_by="ticker",
+                auto_adjust=True,
+                threads=False,
+                progress=False,
+            )
+            pxs = extract_close(df)
+            if isinstance(pxs, pd.DataFrame):
+                if ticker in pxs.columns and not pxs[ticker].dropna().empty:
+                    s = pxs[ticker].dropna().copy()
+                    s.name = ticker
+                    return s
+            elif isinstance(pxs, pd.Series) and not pxs.dropna().empty:
+                s = pxs.dropna().copy()
+                s.name = ticker
+                return s
+        except Exception:
+            pass
+    return pd.Series(dtype=float, name=ticker)
+
+def find_working_benchmark(candidates, start, end):
+    """Tenta, em ordem, os tickers candidatos e devolve (ticker_ok, series_de_precos) ou (None, Series vazia)."""
+    for t in candidates:
+        s = try_download_single(t, start, end)
+        if not s.empty and s.shape[0] > 1:
+            return t, s
+    return None, pd.Series(dtype=float)
+
+# ----------------------------
+# Universo de ativos
+# ----------------------------
+ACOES_BRASIL = [
+    "ALPK3","DOHL3","GOLL4","AMBP3","DOHL4","VSTE3","SUZB3","FRIO3","OPCT3","TUPY3","FIEI3","PETZ3","CASH3",
+    "DTCY3","IRBR3","SCAR3","HAPV3","AVLL3","MAPT4","RAIL3","MOAR3","JALL3","AURA33","MAPT3","CVCB3",
+    "SIMH3","BIOM3","AALR3","ENJU3","ZAMP3","HBSA3","ATED3","DOTZ3","NGRD3","PDTC3","BLUT3","LJQQ3",
+    "RPAD5","PTBL3","MRVE3","RNEW11","RNEW3","CRPG6","RNEW4","MLAS3","CRPG3","ONCO3","MEAL3","BEEF3",
+    "MATD3","ADHM3","AMAR3","CSNA3","CRPG5","RAIZ4","RPAD3","RCSL3","TRAD3","FICT3","AMOB3","GFSA3",
+    "RPAD6","AZTE3","WEST3","NTCO3","RCSL4","BLUT4","LUPA3","DASA3","BIED3","GPIV33","AZEV4","AZEV3",
+    "ESTR4","CEED3","CSAN3","TCSA3","TXRX3","MGEL4","PCAR3","BRKM3","TOKY3","BRKM6","BRKM5","VIVR3",
+    "RDNI3","SNSY5","SHOW3","BDLL3","PLAS3","BDLL4","INEP3","INEP4","AERI3","VVEO3","BHIA3","FHER3",
+    "ATMP3","CTAX3","TXRX4","CTSA3","CTSA4","RPMG3","JFEN3","PMAM3","IFCM3","SEQL3","AGXY3","GSHP3",
+    "PDGR3","OSXB3","OIBR3","AZUL4","NEXP3","AMER3","RSID3","OIBR4","IGBR3","HOOT4","LIGT3","MWET4",
+    "NORD3","MWET3","CEDO4","CTKA3","CTKA4","SYNE3","CEDO3","AHEB3","JBSS3","JHSF3","HETA4","BAZA3",
+    "EALT4","PRIO3","BBAS3","EALT3","VTRU3","VBBR3","SOND6","BNBR3","ISAE4","BGIP4","BMEB3","CMIG4",
+    "AHEB5","SOND5","SAPR4","BRSR6","SAPR11","LOGG3","LUXM4","BMEB4","SAPR3","PINE3","BMGB4","TKNO4",
+    "BRSR3","PINE4","COGN3","BALM4","CLSC3","BRAP3","SBFG3","ABCB4","BGIP3","BOBR4","HBOR3","RANI3",
+    "ENGI4","MRSA5B","CAMB3","CLSC4","CGRA4","CEEB3","BRAP4","CEEB5","ECOR3","ISAE3","ENGI11","CGRA3",
+    "PTNT4","ALLD3","CYRE3","VLID3","COCE3","TECN3","DEXP4","MRSA6B","CMIG3","DEXP3","MDNE3","EQPA3",
+    "EQMA3B","GRND3","MRSA3B","MTRE3","COCE5","TRIS3","LAVV3","EZTC3","EUCA4","POMO3","WLMM4","BRSR5",
+    "BALM3","AGRO3","SANB3","LVTC3","SHUL4","TAEE4","BBDC3","TAEE11","TAEE3","WIZC3","MRFG3","RSUL4",
+    "ENGI3","BEES4","WLMM3","WHRL4","CSMG3","BEES3","SANB11","RECV3","NUTR3","HAGA4","WHRL3","JSLG3",
+    "RAPT3","EQPA5","SANB4","SBSP3","EUCA3","FIQE3","KEPL3","PLPL3","RAPT4","ITSA4","ITSA3","CEBR3",
+    "FESA4","CEBR5","UGPA3","LEVE3","PFRM3","BBSE3","CMIN3","BBDC4","CSUD3","VALE3","EQPA6","NEOE3",
+    "CBEE3","MOVI3","TGMA3","BPAC5","ETER3","CPFE3","POMO4","GOAU4","VIVA3","GOAU3","CEBR6","PETR4",
+    "ALUP4","CAML3","BLAU3","HBRE3","TTEN3","UNIP3","ALUP11","PATI4","ITUB3","TPIS3","VULC3","ROMI3",
+    "BRBI11","PETR3","MILS3","EQPA7","ALUP3","CSED3","CRFB3","ELET3","DMVF3","MYPK3","GGBR3","EKTR3",
+    "BRFS3","CGAS3","CGAS5","UNIP6","ITUB4","UNIP5","BMIN4","OFSA3","TASA4","MULT3","LPSB3","ELET6",
+    "EGIE3","VITT3","ARML3","GGBR4","MTSA4","REDE3","SMTO3","DESK3","CXSE3","DIRR3","SLCE3","PATI3",
+    "ODPV3","INTB3","HAGA3","PTNT3","CPLE3","YDUQ3","JOPA3","BMIN3","GUAR3","EKTR4","TASA3","PSSA3",
+    "CURY3","CPLE6","BMKS3","GMAT3","IGTI3","BPAC11","BPAN4","ANIM3","EPAR3","FLRY3","KLBN4","MELK3",
+    "MNPR3","KLBN11","ENMT4","CPLE5","HBTS5","MGLU3","KLBN3","CEAB3","PORT3","ALOS3","VAMO3","FESA3",
+    "EQTL3","TEND3","NATU3","SOJA3","BMOB3","PNVL3","ENMT3","LREN3","B3SA3","ABEV3","PGMN3","IGTI11",
+    "MDIA3","STBP3","GGPS3","AFLT3","ASAI3","BAUH4","EMAE4","CBAV3","LIPR3","TFCO4","DXCO3","MOTV3",
+    "VIVT3","SEER3","RDOR3","AZZA3","BSLI3","ELET5","BRST3","BSLI4","RENT3","JPSA3","FRAS3","HYPE3",
+    "RADL3","PEAB4","BPAC3","PEAB3","UCAS3","EMBR3","ALPA3","SMFT3","WEGE3","ALPA4","TOTS3","GEPA3",
+    "GEPA4","USIM5","USIM3","LOGN3","ELMD3","REAG3","EVEN3","ESPA3","ENEV3","BRAV3","GPAR3","LWSA3",
+    "PRNR3","MNDL3","USIM6","LAND3","TELB4","QUAL3","ORVR3","TIMS3","POSI3","TELB3","SRNA3","AURE3"
+]
 FIIS_BRASIL = [
-    "AFHI11","AFHF11","ATWN11","AJFI11","ALZC11","MTOF11","ALZR11","AURB11",
-    "APXM11","APXU11","AIEC11","AROA11","EIRA11","ARTE11","ARXD11","AZPE11",
-    "AZPL11","CEBB11","BCRI11","BNFS11","BTML11","BZEL11","BPDR11","BPLC11",
-    "BPMW11","BBFO11","BBFI11","BBIG11","BBRC11","BINR11","BGRB11","BLOG11",
-    "BLMG11","BMLC11","BRSE11","BCIA11","BPFF11","BVAR11","CARE11","FATN11",
-    "RTEL11","BRCD11","BRCO11","BICE11","BIME11","BRIM11","BRIP11","BIPD11",
-    "BIPE11","BROF11","BETW11","LLAO11","BTHR11","BTHI11","BTAL11","BRCR11",
-    "BTCI11","BTLG11","BTHF11","BPML11","BTRA11","BTYU11","BTWR11","BTSG11",
-    "BTSI11","CXCO11","CRFF11","CXRI11","CCME11","CCVA11","CPUR11","CPLG11",
-    "CPOF11","CPTS11","CPSH11","CACR11","CBOP11","BLCA11","CNES11","CDHY11",
-    "CTXT11","CENU11","CFHI11","CFII11","CJCT11","CIXM11","CIXF11","CLIN11",
-    "CSMC11","RENV11","IBCR11","CVPR11","CYCR11","CYLD11","DAMA11","DAYM11",
-    "ASRF11","DLMT11","DPRO11","DEVA11","DAMT11","DOVL11","EDGE11","EMET11",
-    "EGYR11","EQIR11","ERCR11","ERPA11","KEVE11","EXES11","FLCR11","VRTA11",
-    "VRTM11","FTRE11","FLMA11","EGDB11","ELDO11","EURO11","HYPI11","HRES11",
-    "FIIB11","FMOF11","OPTM11","ALMI11","FLNR11","JCIN11","HLMB11","KFOF11",
-    "DVFF11","ANCR11","FAED11","FCFL11","CEOC11","FAMB11","EDGA11","FYTO11",
-    "HCRI11","NSLU11","MAXR11","PQDP11","RBRI11","RDIV11","RBRR11","RECR11",
-    "RECT11","SHDP11","TRNT11","APXR11","BRHT11","BRCQ11","CXAG11","CXCI11",
-    "CXCE11","CXTL11","IDUA11","LKDV11","EDFO11","NVHO11","GTWR11","HBCR11",
-    "HUCG11","HUSC11","HOSI11","FINF11","IRDM11","BLUE11","MMPD11","MCCI11",
-    "OULG11","WTSP11","PABY11","VTPA11","FPNG11","VTPL11","ESTQ11","VPSI11",
-    "RBRY11","PULV11","RBRP11","RELG11","RZTR11","ROOF11","HOMS11","FISC11",
-    "SAIC11","SMRE11","SOFF11","SPVJ11","TGAR11","TGRU11","LVBI11","PVBI11",
-    "BARI11","VERE11","FIVN11","VTLT11","VTXI11","VSHO11","XPRE11","BMLT11",
-    "FIIC11","BSLT11","TCIN11","GLCR11","GCDL11","GFDL11","GLPF11","GCRI11",
-    "GCOI11","GZIT11","FIGS11","GSFI11","VXXV11","GLOG11","GGRC11","ABCP11",
-    "RCFA11","GAME11","GARE11","HABT11","ATCR11","HCTB11","AERO11","HCTR11",
-    "HCST11","HCHG11","HAAA11","ATSA11","HGBL11","HGBS11","HDEL11","FLRP11",
-    "HLOG11","HOFC11","HDOF11","HRDF11","HREC11","SEED11","HPDP11","HFOF11",
-    "YEES11","HGIC11","HILG11","HTMX11","HSAF11","HSLG11","HSML11","HSRE11",
-    "HUSI11","IVCI11","GRUL11","ICNE11","IMMB11","INDE11","INLG11","INRD11",
-    "ITIP11","ITIT11","IBBP11","ISCJ11","IRIM11","ICRI11","TMPS11","ITRI11",
-    "JCDB11","JCDA11","JASC11","JBFO11","VJFD11","JFLL11","JCCJ11","JPPC11",
-    "JPPA11","JSAF11","JSRE11","JSCR11","JTPR11","BGS111","KISU11","KIVO11",
-    "KRES11","KCRE11","KNGR11","KGUJ11","KLOG11","KDLG11","KFEN11","KNHF11",
-    "KNHY11","KNRE11","KNIP11","KOPI11","KORE11","KNPR11","KPMR11","KPRP11",
-    "KNRI11","KNCR11","KNSC11","KNUQ11","LPLP11","SLDZ11","LRED11","LSOI11",
-    "LRDI11","LASC11","LIFE11","LOFT11","LFTT11","MAGM11","MAGM11","MANA11",
-    "MMVE11","MCLO11","MCRE11","MXRF11","MCEM11","MFII11","MGHT11","MGRI11",
-    "MOSO11","SHOP11","MOFF11","NCRI11","NAVT11","N4V111","APTO11","EAGL11",
-    "NEWL11","NEWU11","NMKS11","NVIF11","OCRE11","ONDV11","ARRI11","OBAL11",
-    "FTCE11","OUJP11","PNCR11","PNDL11","PNLM11","PNPR11","PNRC11","PMIS11",
-    "VTVI11","PQAG11","PATA11","PATB11","CVBI11","PATC11","HGRE11","HGFF11",
-    "HGLG11","PATL11","PMLL11","HGPO11","HGCR11","VCRR11","HGRU11","PDBM11",
-    "PEMA11","PRSN11","PLCR11","PORD11","PLRI11","PCAS11","PRSV11","FPAB11",
-    "PBLV11","QTZD11","RZZV11","RZZI11","RZZR11","RBDS11","RSPD11","RBIR11",
-    "RFOF11","RBLG11","RRCI11","FIIP11","RBRD11","RBTS11","DRIM11","MTES11",
-    "RBRF11","RCFF11","RDCI11","RDLI11","SHIP11","RBRL11","RBRX11","RPRI11",
-    "RBRK11","TOPP11","RMAI11","RINV11","RCRI11","RECD11","RMBS11","RECM11",
-    "RBHG11","RBHY11","RBFY11","RBFF11","RBOP11","RCRB11","RBRS11","RBVA11",
-    "RNGO11","RZAK11","RZAT11","RZLC11","RCKF11","SADI11","SAPI11","SARE11",
-    "FISD11","SCPF11","SEQR11","SHPH11","SHPP11","WPLZ11","REIT11","SJAU11",
-    "SOLR11","SPTW11","SPAF11","LTMT11","DVLP11","DVLT11","PMFO11","SPGM11",
-    "SPG211","SPXM11","SPXL11","SPXG11","SPXS11","STRX11","STYI11","SURE11",
-    "SNEL11","SNFF11","SNLG11","SNME11","SNCI11","SPMO11","TELD11","TELM11",
-    "TEPP11","TRBL11","NAUI11","TSER11","TVRI11","VOTS11","TJKB11","TORD11",
-    "TSNC11","TCPF11","TRXY11","TRXF11","TRXB11","URHF11","URPR11","VVCO11",
-    "VVMR11","VPPR11","VVCR11","VVRI11","VGIR11","VGIP11","VGII11","VGHF11",
-    "VGRI11","PLAG11","BLMO11","RVBI11","VCJR11","VLJS11","SALI11","VCHG11",
-    "VCTH11","VSLH11","FVPQ11","VIDS11","VDSV11","VCRI11","VIUR11","VLQI11",
-    "VIFI11","VILG11","VIMO11","VINO11","VIOL11","VISC11","WSEC11","SPDE11",
-    "WHGR11","XPCM11","XPCI11","XPIN11","XPLG11","XPML11","XPSF11","YUFI11",
+    "AFHI11","AFHF11","ATWN11","AJFI11","ALZC11","MTOF11","ALZR11","AURB11","APXM11","APXU11","AIEC11","AROA11",
+    "EIRA11","ARTE11","ARXD11","AZPE11","AZPL11","CEBB11","BCRI11","BNFS11","BTML11","BZEL11","BPDR11","BPLC11",
+    "BPMW11","BBFO11","BBFI11","BBIG11","BBRC11","BINR11","BGRB11","BLOG11","BLMG11","BMLC11","BRSE11","BCIA11",
+    "BPFF11","BVAR11","CARE11","FATN11","RTEL11","BRCD11","BRCO11","BICE11","BIME11","BRIM11","BRIP11","BIPD11",
+    "BIPE11","BROF11","BETW11","LLAO11","BTHR11","BTHI11","BTAL11","BRCR11","BTCI11","BTLG11","BTHF11","BPML11",
+    "BTRA11","BTYU11","BTWR11","BTSG11","BTSI11","CXCO11","CRFF11","CXRI11","CCME11","CCVA11","CPUR11","CPLG11",
+    "CPOF11","CPTS11","CPSH11","CACR11","CBOP11","BLCA11","CNES11","CDHY11","CTXT11","CENU11","CFHI11","CFII11",
+    "CJCT11","CIXM11","CIXF11","CLIN11","CSMC11","RENV11","IBCR11","CVPR11","CYCR11","CYLD11","DAMA11","DAYM11",
+    "ASRF11","DLMT11","DPRO11","DEVA11","DAMT11","DOVL11","EDGE11","EMET11","EGYR11","EQIR11","ERCR11","ERPA11",
+    "KEVE11","EXES11","FLCR11","VRTA11","VRTM11","FTRE11","FLMA11","EGDB11","ELDO11","EURO11","HYPI11","HRES11",
+    "FIIB11","FMOF11","OPTM11","ALMI11","FLNR11","JCIN11","HLMB11","KFOF11","DVFF11","ANCR11","FAED11","FCFL11",
+    "CEOC11","FAMB11","EDGA11","FYTO11","HCRI11","NSLU11","MAXR11","PQDP11","RBRI11","RDIV11","RBRR11","RECR11",
+    "RECT11","SHDP11","TRNT11","APXR11","BRHT11","BRCQ11","CXAG11","CXCI11","CXCE11","CXTL11","IDUA11","LKDV11",
+    "EDFO11","NVHO11","GTWR11","HBCR11","HUCG11","HUSC11","HOSI11","FINF11","IRDM11","BLUE11","MMPD11","MCCI11",
+    "OULG11","WTSP11","PABY11","VTPA11","FPNG11","VTPL11","ESTQ11","VPSI11","RBRY11","PULV11","RBRP11","RELG11",
+    "RZTR11","ROOF11","HOMS11","FISC11","SAIC11","SMRE11","SOFF11","SPVJ11","TGAR11","TGRU11","LVBI11","PVBI11",
+    "BARI11","VERE11","FIVN11","VTLT11","VTXI11","VSHO11","XPRE11","BMLT11","FIIC11","BSLT11","TCIN11","GLCR11",
+    "GCDL11","GFDL11","GLPF11","GCRI11","GCOI11","GZIT11","FIGS11","GSFI11","VXXV11","GLOG11","GGRC11","ABCP11",
+    "RCFA11","GAME11","GARE11","HABT11","ATCR11","HCTB11","AERO11","HCTR11","HCST11","HCHG11","HAAA11","ATSA11",
+    "HGBL11","HGBS11","HDEL11","FLRP11","HLOG11","HOFC11","HDOF11","HRDF11","HREC11","SEED11","HPDP11","HFOF11",
+    "YEES11","HGIC11","HILG11","HTMX11","HSAF11","HSLG11","HSML11","HSRE11","HUSI11","IVCI11","GRUL11","ICNE11",
+    "IMMB11","INDE11","INLG11","INRD11","ITIP11","ITIT11","IBBP11","ISCJ11","IRIM11","ICRI11","TMPS11","ITRI11",
+    "JCDB11","JCDA11","JASC11","JBFO11","VJFD11","JFLL11","JCCJ11","JPPC11","JPPA11","JSAF11","JSRE11","JSCR11",
+    "JTPR11","BGS111","KISU11","KIVO11","KRES11","KCRE11","KNGR11","KGUJ11","KLOG11","KDLG11","KFEN11","KNHF11",
+    "KNHY11","KNRE11","KNIP11","KOPI11","KORE11","KNPR11","KPMR11","KPRP11","KNRI11","KNCR11","KNSC11","KNUQ11",
+    "LPLP11","SLDZ11","LRED11","LSOI11","LRDI11","LASC11","LIFE11","LOFT11","LFTT11","MAGM11","MAGM11","MANA11",
+    "MMVE11","MCLO11","MCRE11","MXRF11","MCEM11","MFII11","MGHT11","MGRI11","MOSO11","SHOP11","MOFF11","NCRI11",
+    "NAVT11","N4V111","APTO11","EAGL11","NEWL11","NEWU11","NMKS11","NVIF11","OCRE11","ONDV11","ARRI11","OBAL11",
+    "FTCE11","OUJP11","PNCR11","PNDL11","PNLM11","PNPR11","PNRC11","PMIS11","VTVI11","PQAG11","PATA11","PATB11",
+    "CVBI11","PATC11","HGRE11","HGFF11","HGLG11","PATL11","PMLL11","HGPO11","HGCR11","VCRR11","HGRU11","PDBM11",
+    "PEMA11","PRSN11","PLCR11","PORD11","PLRI11","PCAS11","PRSV11","FPAB11","PBLV11","QTZD11","RZZV11","RZZI11",
+    "RZZR11","RBDS11","RSPD11","RBIR11","RFOF11","RBLG11","RRCI11","FIIP11","RBRD11","RBTS11","DRIM11","MTES11",
+    "RBRF11","RCFF11","RDCI11","RDLI11","SHIP11","RBRL11","RBRX11","RPRI11","RBRK11","TOPP11","RMAI11","RINV11",
+    "RCRI11","RECD11","RMBS11","RECM11","RBHG11","RBHY11","RBFY11","RBFF11","RBOP11","RCRB11","RBRS11","RBVA11",
+    "RNGO11","RZAK11","RZAT11","RZLC11","RCKF11","SADI11","SAPI11","SARE11","FISD11","SCPF11","SEQR11","SHPH11",
+    "SHPP11","WPLZ11","REIT11","SJAU11","SOLR11","SPTW11","SPAF11","LTMT11","DVLP11","DVLT11","PMFO11","SPGM11",
+    "SPG211","SPXM11","SPXL11","SPXG11","SPXS11","STRX11","STYI11","SURE11","SNEL11","SNFF11","SNLG11","SNME11",
+    "SNCI11","SPMO11","TELD11","TELM11","TEPP11","TRBL11","NAUI11","TSER11","TVRI11","VOTS11","TJKB11","TORD11",
+    "TSNC11","TCPF11","TRXY11","TRXF11","TRXB11","URHF11","URPR11","VVCO11","VVMR11","VPPR11","VVCR11","VVRI11",
+    "VGIR11","VGIP11","VGII11","VGHF11","VGRI11","PLAG11","BLMO11","RVBI11","VCJR11","VLJS11","SALI11","VCHG11",
+    "VCTH11","VSLH11","FVPQ11","VIDS11","VDSV11","VCRI11","VIUR11","VLQI11","VIFI11","VILG11","VIMO11","VINO11",
+    "VIOL11","VISC11","WSEC11","SPDE11","WHGR11","XPCM11","XPCI11","XPIN11","XPLG11","XPML11","XPSF11","YUFI11",
     "ZAGH11","ZAVC11","ZAVI11","ZIFI11","TAGR11","CPFF11"
 ]
 
-# Adiciona .SA no final de cada ticker
-acoes_brasil_sa = [ticker + '.SA' for ticker in ACOES_BRASIL]
-fiis_brasil_sa = [ticker + '.SA' for ticker in FIIS_BRASIL]
+# Adiciona .SA
+acoes_brasil_sa = [t + ".SA" for t in ACOES_BRASIL]
+fiis_brasil_sa  = [t + ".SA" for t in FIIS_BRASIL]
 
 # Ativos padrão
 default_acoes = ['VALE3.SA', 'PETR4.SA', 'ITUB4.SA', 'B3SA3.SA']
-default_fiis = ['HGLG11.SA', 'KNRI11.SA', 'MXRF11.SA', 'HGRE11.SA']
+default_fiis  = ['HGLG11.SA','KNRI11.SA','MXRF11.SA','HGRE11.SA']
 
-# NOVA SELEÇÃO DE TIPO DE ATIVOS
+# ----------------------------
+# UI - seleção de ativos
+# ----------------------------
 st.markdown("### 🔧 Configuração da Carteira")
 
-# Seleção do tipo de ativos
 tipo_ativos = st.radio(
     "Selecione o tipo de ativos para análise:",
     ["Ações", "Fundos Imobiliários (FIIs)", "Misto (Ações + FIIs)"],
@@ -135,7 +188,6 @@ tipo_ativos = st.radio(
     index=0
 )
 
-# Multiselect baseado no tipo selecionado
 if tipo_ativos == "Ações":
     ativos_disponiveis = acoes_brasil_sa
     default_ativos = default_acoes
@@ -144,87 +196,97 @@ elif tipo_ativos == "Fundos Imobiliários (FIIs)":
     ativos_disponiveis = fiis_brasil_sa
     default_ativos = default_fiis
     st.info("🏢 Selecionando apenas Fundos Imobiliários")
-else:  # Misto
+else:
     ativos_disponiveis = acoes_brasil_sa + fiis_brasil_sa
-    default_ativos = default_acoes[:2] + default_fiis[:2]  # 2 de cada
+    default_ativos = default_acoes[:2] + default_fiis[:2]
     st.info("📊 Selecionando Ações e Fundos Imobiliários")
 
 ativos = st.multiselect(
-    f"Selecione os ativos ({len(ativos_disponiveis)} disponíveis):", 
-    ativos_disponiveis, 
+    f"Selecione os ativos ({len(ativos_disponiveis)} disponíveis):",
+    ativos_disponiveis,
     default=default_ativos
 )
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    data_inicio = st.date_input("Data de início", value=datetime.today() - timedelta(days=3*365))
+    data_inicio = as_dt(st.date_input("Data de início", value=datetime.today() - timedelta(days=3*365)))
 with col2:
-    data_fim = st.date_input("Data de fim", value=datetime.today())
+    data_fim = as_dt(st.date_input("Data de fim", value=datetime.today()))
 with col3:
     taxa_rf = st.number_input("Taxa Livre de Risco (a.a.)", value=0.00, format="%.2f") / 100
 
-# Seleção do benchmark
-
+# ----------------------------
+# Benchmarks
+# ----------------------------
 BENCH_CANDIDATES = {
-    "Ações - Ibovespa": ["^BVSP", "BOVA11.SA"],
-    "Ações - Empresas Pequenas":    ["SMLL.SA", "SMAL11.SA"],
-    "Ações - Empresas de Dividendos":     ["IDIV.SA", "DIVO11.SA"],
-    "Ações Internacionais - S&P500":   ["IVVB11.SA","SPXI11.SA"],
-    "Fundos Imobiliários - IFIX":     ["^IFIX", "IFIX.SA", "XFIX11.SA"],
+    "Ações - Ibovespa": ["^BVSP", "^IBOV", "IBOV.SA", "BOVA11.SA"],
+    "Ações - Empresas Pequenas": ["SMLL.SA", "SMAL11.SA"],
+    "Ações - Empresas de Dividendos": ["IDIV.SA", "DIVO11.SA"],
+    "Ações Internacionais - S&P500": ["IVVB11.SA", "SPXI11.SA"],
+    "Fundos Imobiliários - IFIX": ["^IFIX", "IFIX.SA", "XFIX11.SA"],
 }
 
-# Função para encontrar o primeiro ticker que funciona
-def encontrar_ticker_benchmark(candidates):
-    for ticker in candidates:
-        try:
-            # Testa se o ticker existe e tem dados
-            temp_data = yf.download(ticker, start=data_inicio, end=data_fim, progress=False)
-            if not temp_data.empty and len(temp_data) > 0:
-                return ticker
-        except:
-            continue
-    return None
-
-# Seleção do benchmark
 benchmark_selecionado = st.selectbox(
     "Escolha o benchmark para comparação:",
-    list(BENCH_CANDIDATES.keys()),
-    index=0
+    list(BENCH_CANDIDATES.keys()), index=0
 )
 
-# Encontra o ticker que funciona
-ticker_candidates = BENCH_CANDIDATES[benchmark_selecionado]
-ticker_benchmark = encontrar_ticker_benchmark(ticker_candidates)
+# Procura benchmark que funcione (com fallback de 1d -> 1wk)
+cand = BENCH_CANDIDATES[benchmark_selecionado]
+ticker_bench, preco_bench = find_working_benchmark(cand, data_inicio, data_fim + timedelta(days=1))
 
-if ticker_benchmark is None:
-    st.error(f"❌ Nenhum dos tickers para {benchmark_selecionado} funcionou: {ticker_candidates}")
-    st.stop()
+if ticker_bench is None:
+    st.warning(f"⚠️ Benchmark indisponível agora no Yahoo: {cand}. Continuando sem comparação.")
 else:
-    st.success(f"✅ Benchmark selecionado: {benchmark_selecionado} usando {ticker_benchmark}")
+    st.success(f"✅ Benchmark selecionado: {benchmark_selecionado} usando {ticker_bench}")
 
-opcao_carteira = st.selectbox("Escolha a carteira a ser analisada:", ["Carteira Própria", "Máximo Sharpe", "Máximo Sortino", "Máximo Treynor"], index=1)
+opcao_carteira = st.selectbox(
+    "Escolha a carteira a ser analisada:",
+    ["Carteira Própria", "Máximo Sharpe", "Máximo Sortino", "Máximo Treynor"],
+    index=1
+)
 
-# Coleta de dados
+# ----------------------------
+# Coleta de dados dos ativos
+# ----------------------------
 if len(ativos) < 2:
     st.warning("Selecione pelo menos dois ativos.")
     st.stop()
 
-# Download de dados - ATUALIZADO para usar o benchmark selecionado
 try:
-    dados = yf.download(ativos + [ticker_benchmark], start=data_inicio, end=data_fim)['Close'].dropna()
-    
-    # Verifica se o benchmark tem dados
-    if ticker_benchmark not in dados.columns or dados[ticker_benchmark].isna().all():
-        st.error(f"❌ Não foi possível obter dados para o benchmark {ticker_benchmark}")
+    dados = yf.download(
+        tickers=ativos + ([ticker_bench] if ticker_bench else []),
+        start=data_inicio,
+        end=data_fim + timedelta(days=1),  # end exclusivo
+        interval="1d",
+        group_by="ticker",
+        auto_adjust=True,
+        threads=False,
+        progress=False,
+    )
+    precos = extract_close(dados).dropna(how="all")
+    if precos.empty or len(set(ativos).intersection(precos.columns)) < 2:
+        st.error("❌ Não foi possível obter dados suficientes dos ativos selecionados.")
         st.stop()
-        
-    retornos = np.log(dados[ativos] / dados[ativos].shift(1)).dropna()
-    benchmark = np.log(dados[ticker_benchmark] / dados[ticker_benchmark].shift(1)).dropna()
-    
+
+    # Retornos dos ativos
+    precos_ativos = precos[ativos].dropna(how="all")
+    retornos = np.log(precos_ativos / precos_ativos.shift(1)).dropna()
+
+    # Retornos do benchmark (se disponível)
+    if ticker_bench and ticker_bench in precos.columns:
+        sbench = precos[ticker_bench].dropna()
+        benchmark = np.log(sbench / sbench.shift(1)).dropna()
+    else:
+        benchmark = pd.Series(dtype=float)
+
 except Exception as e:
     st.error(f"❌ Erro ao baixar dados: {e}")
     st.stop()
 
+# ----------------------------
+# Otimização (simulação de carteiras)
+# ----------------------------
 media = retornos.mean() * 252
 cov = retornos.cov() * 252
 
@@ -243,31 +305,45 @@ if opcao_carteira == "Carteira Própria":
     pesos = np.array(pesos_input)
 else:
     if opcao_carteira == "Máximo Sharpe":
-        idx_sharpe = np.argmax(sharpe)
-        pesos = pesos_sim[idx_sharpe]
+        pesos = pesos_sim[np.argmax(sharpe)]
     elif opcao_carteira == "Máximo Sortino":
         downside_std = np.std(retornos[retornos < 0], ddof=1) * np.sqrt(252)
-        sortino = (rets - taxa_rf) / downside_std
-        idx_sortino = np.argmax(sortino)
-        pesos = pesos_sim[idx_sortino]
+        sortino_vals = (rets - taxa_rf) / downside_std
+        pesos = pesos_sim[np.argmax(sortino_vals)]
     elif opcao_carteira == "Máximo Treynor":
-        betas_ind = np.array([np.cov(retornos[ativo], benchmark)[0,1] / np.var(benchmark) for ativo in ativos])
-        betas = pesos_sim @ betas_ind
-        treynor = (rets - taxa_rf) / betas
-        idx_treynor = np.argmax(treynor)
-        pesos = pesos_sim[idx_treynor]
+        if benchmark.size > 0:
+            betas_ind = np.array([np.cov(retornos[ativo].align(benchmark, join="inner")[0],
+                                         benchmark.align(retornos[ativo], join="inner")[0])[0, 1] /
+                                  np.var(benchmark) for ativo in ativos])
+            betas = pesos_sim @ betas_ind
+            treynor_vals = (rets - taxa_rf) / betas
+            pesos = pesos_sim[np.argmax(treynor_vals)]
+        else:
+            st.warning("⚠️ Sem benchmark disponível: Treynor não pode ser maximizado. Usando Máximo Sharpe.")
+            pesos = pesos_sim[np.argmax(sharpe)]
 
 ret_port = (retornos @ pesos)
 
+# ----------------------------
 # Indicadores
+# ----------------------------
 retorno_esperado = ret_port.mean() * 252
 volatilidade = ret_port.std() * np.sqrt(252)
 sharpe_ratio = (retorno_esperado - taxa_rf) / volatilidade
+
 downside = ret_port[ret_port < 0].std() * np.sqrt(252)
-sortino = (retorno_esperado - taxa_rf) / downside
-covar = np.cov(ret_port, benchmark.loc[ret_port.index])
-beta = covar[0, 1] / covar[1, 1]
-treynor = (retorno_esperado - taxa_rf) / beta
+sortino = (retorno_esperado - taxa_rf) / downside if downside > 0 else np.nan
+
+if benchmark.size > 0:
+    # Alinha datas para o beta/treynor
+    port_al, bench_al = ret_port.align(benchmark, join="inner")
+    covar = np.cov(port_al, bench_al)
+    beta = covar[0, 1] / covar[1, 1] if covar[1, 1] != 0 else np.nan
+    treynor = (retorno_esperado - taxa_rf) / beta if beta and beta != 0 else np.nan
+else:
+    beta = np.nan
+    treynor = np.nan
+
 var_95 = np.percentile(ret_port, 5) * np.sqrt(252)
 cvar_95 = ret_port[ret_port <= np.percentile(ret_port, 5)].mean() * np.sqrt(252)
 acumulado = (1 + ret_port).cumprod()
@@ -275,22 +351,25 @@ drawdown = acumulado / acumulado.cummax() - 1
 max_dd = drawdown.min()
 
 st.markdown("### Indicadores da Carteira")
-col1, col2, col3 = st.columns(3)
-with col1:
+c1, c2, c3 = st.columns(3)
+with c1:
     st.metric("Retorno Esperado", f"{retorno_esperado:.2%}")
     st.metric("Volatilidade", f"{volatilidade:.2%}")
     st.metric("Sharpe", f"{sharpe_ratio:.2f}")
-with col2:
+with c2:
     st.metric("Sortino", f"{sortino:.2f}")
-    st.metric("Treynor", f"{treynor:.2f}")
-    st.metric("Beta", f"{beta:.2f}")
-with col3:
+    st.metric("Treynor", f"{treynor:.2f}" if not np.isnan(treynor) else "—")
+    st.metric("Beta", f"{beta:.2f}" if not np.isnan(beta) else "—")
+with c3:
     st.metric("VaR (95%)", f"{var_95:.2%}")
     st.metric("CVaR (95%)", f"{cvar_95:.2%}")
     st.metric("Max Drawdown", f"{max_dd:.2%}")
 
+# ----------------------------
+# Gráficos
+# ----------------------------
 # Preço base 100
-base100 = (dados[ativos] / dados[ativos].iloc[0]) * 100
+base100 = (precos_ativos / precos_ativos.iloc[0]) * 100
 st.plotly_chart(px.line(base100, title="Preços Base 100"), use_container_width=True)
 
 # Tabela de pesos
@@ -300,110 +379,98 @@ st.dataframe(df_pesos, use_container_width=True)
 
 st.markdown("### Fronteira Eficiente")
 
-# Cálculo do retorno e risco do benchmark selecionado
-ret_bench = benchmark.mean() * 252
-risco_bench = benchmark.std() * np.sqrt(252)
-
-# Fronteira eficiente com destaques
+# Fronteira
 df_fronteira = pd.DataFrame({'Retorno': rets, 'Risco': riscos, 'Sharpe': sharpe})
 fig_fronteira = go.Figure()
-
-# Pontos da fronteira
 fig_fronteira.add_trace(go.Scatter(
-    x=df_fronteira['Risco'],
-    y=df_fronteira['Retorno'],
+    x=df_fronteira['Risco'], y=df_fronteira['Retorno'],
     mode='markers',
     marker=dict(color=df_fronteira['Sharpe'], colorscale='Viridis', size=6, showscale=True),
-    name='Carteiras Simuladas',
-    opacity=0.7
+    name='Carteiras Simuladas', opacity=0.7
 ))
-
-# Carteira Selecionada
 fig_fronteira.add_trace(go.Scatter(
-    x=[volatilidade],
-    y=[retorno_esperado],
+    x=[volatilidade], y=[retorno_esperado],
     mode='markers+text',
     marker=dict(color='red', size=14, symbol='star', line=dict(color='black', width=1)),
-    text=["Carteira Selecionada"],
-    textposition="top center",
-    name="Carteira Selecionada",
-    showlegend=True
+    text=["Carteira Selecionada"], textposition="top center",
+    name="Carteira Selecionada", showlegend=True
 ))
 
-# Benchmark selecionado - ATUALIZADO
-fig_fronteira.add_trace(go.Scatter(
-    x=[risco_bench],
-    y=[ret_bench],
-    mode='markers+text',
-    marker=dict(color='blue', size=14, symbol='diamond', line=dict(color='black', width=1)),
-    text=[f"{benchmark_selecionado} ({ticker_benchmark})"],
-    textposition="top center",
-    name=f"{benchmark_selecionado} ({ticker_benchmark})",
-    showlegend=True
-))
+# Ponto do benchmark (se houver)
+if benchmark.size > 0:
+    ret_bench = benchmark.mean() * 252
+    risco_bench = benchmark.std() * np.sqrt(252)
+    fig_fronteira.add_trace(go.Scatter(
+        x=[risco_bench], y=[ret_bench],
+        mode='markers+text',
+        marker=dict(color='blue', size=14, symbol='diamond', line=dict(color='black', width=1)),
+        text=[f"{benchmark_selecionado} ({ticker_bench})"],
+        textposition="top center",
+        name=f"{benchmark_selecionado} ({ticker_bench})",
+        showlegend=True
+    ))
 
 fig_fronteira.update_layout(
-    title=f"Fronteira Eficiente com Destaques - Benchmark: {benchmark_selecionado}",
-    xaxis_title="Volatilidade",
-    yaxis_title="Retorno Esperado"
+    title=f"Fronteira Eficiente {'(sem benchmark)' if benchmark.size==0 else f'- Benchmark: {benchmark_selecionado}'}",
+    xaxis_title="Volatilidade (a.a.)",
+    yaxis_title="Retorno Esperado (a.a.)"
 )
-
 st.plotly_chart(fig_fronteira, use_container_width=True)
 
-# Desempenho acumulado - ATUALIZADO
+# Desempenho acumulado
 base100_port = (1 + ret_port).cumprod() * 100
-base100_bench = (1 + benchmark).cumprod() * 100
 fig_acum = go.Figure()
 fig_acum.add_trace(go.Scatter(x=base100_port.index, y=base100_port, name="Carteira"))
-fig_acum.add_trace(go.Scatter(x=base100_bench.index, y=base100_bench, name=f"{benchmark_selecionado} ({ticker_benchmark})"))
-fig_acum.update_layout(title=f"Desempenho Acumulado (Base 100) vs {benchmark_selecionado}", xaxis_title="Data", yaxis_title="Índice")
+if benchmark.size > 0:
+    base100_bench = (1 + benchmark).cumprod() * 100
+    fig_acum.add_trace(go.Scatter(x=base100_bench.index, y=base100_bench, name=f"{benchmark_selecionado} ({ticker_bench})"))
+fig_acum.update_layout(title=f"Desempenho Acumulado (Base 100){'' if benchmark.size==0 else ' vs ' + benchmark_selecionado}",
+                       xaxis_title="Data", yaxis_title="Índice")
 st.plotly_chart(fig_acum, use_container_width=True)
 
-# Volatilidade móvel - ATUALIZADO
+# Volatilidade móvel (30d)
 vol_port = ret_port.rolling(30).std() * np.sqrt(252)
-vol_bench = benchmark.rolling(30).std() * np.sqrt(252)
 fig_vol = go.Figure()
 fig_vol.add_trace(go.Scatter(x=vol_port.index, y=vol_port, name="Carteira"))
-fig_vol.add_trace(go.Scatter(x=vol_bench.index, y=vol_bench, name=f"{benchmark_selecionado} ({ticker_benchmark})"))
-fig_vol.update_layout(title=f"Volatilidade Móvel (30 dias) vs {benchmark_selecionado}", xaxis_title="Data", yaxis_title="Volatilidade")
+if benchmark.size > 0:
+    vol_bench = benchmark.rolling(30).std() * np.sqrt(252)
+    fig_vol.add_trace(go.Scatter(x=vol_bench.index, y=vol_bench, name=f"{benchmark_selecionado} ({ticker_bench})"))
+fig_vol.update_layout(title=f"Volatilidade Móvel (30 dias){'' if benchmark.size==0 else ' vs ' + benchmark_selecionado}",
+                      xaxis_title="Data", yaxis_title="Volatilidade")
 st.plotly_chart(fig_vol, use_container_width=True)
 
-# Drawdown - ATUALIZADO
-dd_bench = (1 + benchmark).cumprod()
-dd_bench = dd_bench / dd_bench.cummax() - 1
+# Drawdown
+dd_port = (1 + ret_port).cumprod()
+dd_port = dd_port / dd_port.cummax() - 1
 fig_dd = go.Figure()
-fig_dd.add_trace(go.Scatter(x=drawdown.index, y=drawdown, name="Carteira"))
-fig_dd.add_trace(go.Scatter(x=dd_bench.index, y=dd_bench, name=f"{benchmark_selecionado} ({ticker_benchmark})"))
-fig_dd.update_layout(title=f"Drawdown vs {benchmark_selecionado}", xaxis_title="Data", yaxis_title="Drawdown (%)")
+fig_dd.add_trace(go.Scatter(x=dd_port.index, y=dd_port, name="Carteira"))
+if benchmark.size > 0:
+    dd_bench = (1 + benchmark).cumprod()
+    dd_bench = dd_bench / dd_bench.cummax() - 1
+    fig_dd.add_trace(go.Scatter(x=dd_bench.index, y=dd_bench, name=f"{benchmark_selecionado} ({ticker_bench})"))
+fig_dd.update_layout(title=f"Drawdown{'' if benchmark.size==0 else ' vs ' + benchmark_selecionado}",
+                     xaxis_title="Data", yaxis_title="Drawdown (%)")
 st.plotly_chart(fig_dd, use_container_width=True)
 
-# Alocação de pesos
-fig_pizza = px.pie(
-    names=ativos,
-    values=pesos,
-    title="Distribuição de Pesos da Carteira",
-    hole=0.4
-)
+# Pizza de alocação
+fig_pizza = px.pie(names=ativos, values=pesos, title="Distribuição de Pesos da Carteira", hole=0.4)
 fig_pizza.update_traces(textinfo='percent+label')
 st.plotly_chart(fig_pizza, use_container_width=True)
 
-# Matriz de correlação - ATUALIZADO
+# Matriz de correlação
 df_corr = retornos.copy()
 df_corr["Carteira"] = ret_port
-df_corr[f"{benchmark_selecionado}"] = benchmark
-
+if benchmark.size > 0:
+    df_corr[f"{benchmark_selecionado}"] = benchmark
 matriz_corr = df_corr.corr()
-
 fig_corr = px.imshow(
-    matriz_corr,
-    text_auto=".2f",
-    color_continuous_scale='RdBu_r',
-    title=f"Matriz de Correlação - Ativos, Carteira e {benchmark_selecionado}"
+    matriz_corr, text_auto=".2f", color_continuous_scale='RdBu_r',
+    title=f"Matriz de Correlação - Ativos, Carteira{' e ' + benchmark_selecionado if benchmark.size>0 else ''}"
 )
-
 st.markdown("### Matriz de Correlação dos Retornos Diários")
 st.plotly_chart(fig_corr, use_container_width=True)
 
 # Rodapé
 st.markdown("---")
 st.markdown("<center>Desenvolvido pelo <strong>Prof. Luiz Eduardo Gaio</strong> para fins educacionais</center>", unsafe_allow_html=True)
+
