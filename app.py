@@ -247,42 +247,72 @@ opcao_carteira = st.selectbox(
 )
 
 # ----------------------------
-# Coleta de dados dos ativos
+# Coleta de dados dos ativos (robusto: 1 a 1)
 # ----------------------------
 if len(ativos) < 2:
     st.warning("Selecione pelo menos dois ativos.")
     st.stop()
 
-try:
-    dados = yf.download(
-        tickers=ativos + ([ticker_bench] if ticker_bench else []),
-        start=data_inicio,
-        end=data_fim + timedelta(days=1),  # end exclusivo
-        interval="1d",
-        group_by="ticker",
-        auto_adjust=True,
-        threads=False,
-        progress=False,
-    )
-    precos = extract_close(dados).dropna(how="all")
-    if precos.empty or len(set(ativos).intersection(precos.columns)) < 2:
-        st.error("❌ Não foi possível obter dados suficientes dos ativos selecionados.")
-        st.stop()
+def dl_ativo(ticker, start, end):
+    """Baixa 1 ticker com fallback de intervalo e aceita Close/Adj Close."""
+    for itv in ("1d", "1wk"):
+        try:
+            df = yf.download(
+                tickers=[ticker],
+                start=start,
+                end=end,                 # lembre: você já somou +1 dia no caller
+                interval=itv,
+                group_by="ticker",
+                auto_adjust=True,
+                threads=False,
+                progress=False,
+            )
+            pxs = extract_close(df)
+            if isinstance(pxs, pd.DataFrame) and ticker in pxs.columns:
+                s = pxs[ticker].dropna()
+            elif isinstance(pxs, pd.Series) and not pxs.dropna().empty:
+                s = pxs.dropna()
+                s.name = ticker
+            else:
+                s = pd.Series(dtype=float, name=ticker)
+            if not s.empty:
+                return s
+        except Exception:
+            pass
+    return pd.Series(dtype=float, name=ticker)
 
-    # Retornos dos ativos
-    precos_ativos = precos[ativos].dropna(how="all")
-    retornos = np.log(precos_ativos / precos_ativos.shift(1)).dropna()
+# Baixa cada ativo individualmente
+series = []
+for t in ativos:
+    s = dl_ativo(t, data_inicio, data_fim + timedelta(days=1))  # end do Yahoo é exclusivo
+    if not s.empty:
+        series.append(s)
 
-    # Retornos do benchmark (se disponível)
-    if ticker_bench and ticker_bench in precos.columns:
-        sbench = precos[ticker_bench].dropna()
-        benchmark = np.log(sbench / sbench.shift(1)).dropna()
-    else:
-        benchmark = pd.Series(dtype=float)
-
-except Exception as e:
-    st.error(f"❌ Erro ao baixar dados: {e}")
+if len(series) < 2:
+    st.error("❌ Não foi possível obter dados suficientes dos ativos selecionados.")
     st.stop()
+
+# Junta os preços e calcula retornos
+precos_ativos = pd.concat(series, axis=1).sort_index()
+retornos = np.log(precos_ativos / precos_ativos.shift(1)).dropna()
+
+# ----------------------------
+# Benchmark (se disponível)
+# ----------------------------
+# Se você tiver 'preco_bench' vindo da função find_working_benchmark, use-o;
+# caso contrário, tente baixar agora.
+if 'preco_bench' in locals() and isinstance(preco_bench, pd.Series) and not preco_bench.empty:
+    sbench = preco_bench
+elif ticker_bench:
+    sbench = dl_ativo(ticker_bench, data_inicio, data_fim + timedelta(days=1))
+else:
+    sbench = pd.Series(dtype=float)
+
+if not sbench.empty:
+    benchmark = np.log(sbench / sbench.shift(1)).dropna()
+else:
+    benchmark = pd.Series(dtype=float)
+
 
 # ----------------------------
 # Otimização (simulação de carteiras)
